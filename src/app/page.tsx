@@ -40,27 +40,31 @@ function SortableRoutine({ routine, onToggle, onDelete, onNotificationToggle, on
       style={style}
       {...attributes}
       {...listeners}
-      className="flex items-center p-4 border rounded mb-2 cursor-move"
+      className="flex items-center p-4 bg-gray-700 border border-gray-600 rounded-lg mb-2 cursor-move hover:bg-gray-600 transition-colors duration-200"
     >
       <input
         type="checkbox"
         checked={routine.completed}
         onChange={() => onToggle(routine.id)}
-        className="mr-4"
+        className="mr-4 w-5 h-5 rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
       />
       <div className="flex-1">
-        <div className="font-semibold">{routine.time} - {routine.title}</div>
+        <div className="font-semibold text-white">{routine.time} - {routine.title}</div>
         {routine.message && (
-          <div className="text-sm text-gray-600">{routine.message}</div>
+          <div className="text-sm text-gray-400">{routine.message}</div>
         )}
         <div className="flex gap-2 mt-2">
           <button
             onClick={() => onNotificationToggle(routine.id)}
-            className={`p-2 rounded ${routine.notification ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+            className={`p-2 rounded-lg transition-colors duration-200 ${
+              routine.notification 
+                ? 'bg-blue-500 text-white' 
+                : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+            }`}
           >
             <FaBell />
           </button>
-          <label className="p-2 rounded bg-gray-200 cursor-pointer">
+          <label className="p-2 rounded-lg bg-gray-600 text-gray-300 hover:bg-gray-500 cursor-pointer transition-colors duration-200">
             <input
               type="file"
               accept="image/*"
@@ -74,7 +78,7 @@ function SortableRoutine({ routine, onToggle, onDelete, onNotificationToggle, on
           </label>
           <button
             onClick={() => onDelete(routine.id)}
-            className="p-2 rounded bg-red-500 text-white"
+            className="p-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors duration-200"
           >
             <FaTrash />
           </button>
@@ -172,31 +176,31 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen p-8 bg-gray-100">
+    <div className="min-h-screen p-8 bg-gray-900 text-gray-100">
       {/* 날짜, 요일, 시간 표시 */}
       <div className="text-center mb-4">
-        <div className="text-lg font-semibold">{dateString} ({dayString})</div>
-        <div className="text-2xl font-bold">{timeString}</div>
+        <div className="text-lg font-semibold text-gray-300">{dateString} ({dayString})</div>
+        <div className="text-2xl font-bold text-white">{timeString}</div>
       </div>
 
       {/* 오늘의 진행률 + D+N 카운터 */}
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+      <div className="bg-gray-800 p-6 rounded-xl shadow-lg mb-8 border border-gray-700">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-white">
           오늘의 진행률
-          <span className="text-base text-blue-600 font-bold">{getDaysCount()}</span>
+          <span className="text-base text-blue-400 font-bold">{getDaysCount()}</span>
         </h2>
-        <div className="w-full bg-gray-200 rounded-full h-4">
+        <div className="w-full bg-gray-700 rounded-full h-4">
           <div
-            className="bg-blue-500 h-4 rounded-full"
+            className="bg-blue-500 h-4 rounded-full transition-all duration-300"
             style={{ width: `${calculateProgress()}%` }}
           ></div>
         </div>
-        <p className="text-center mt-2">{calculateProgress()}% 완료</p>
+        <p className="text-center mt-2 text-gray-300">{calculateProgress()}% 완료</p>
       </div>
 
-      {/* 오늘의 일과 (위로 이동) */}
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h2 className="text-xl font-semibold mb-4">오늘의 일과</h2>
+      {/* 오늘의 일과 */}
+      <div className="bg-gray-800 p-6 rounded-xl shadow-lg mb-8 border border-gray-700">
+        <h2 className="text-xl font-semibold mb-4 text-white">오늘의 일과</h2>
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -242,39 +246,39 @@ export default function Home() {
         </DndContext>
       </div>
 
-      {/* 새로운 일과 추가하기 (아래로 이동) */}
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h2 className="text-xl font-semibold mb-4">새로운 일과 추가하기</h2>
+      {/* 새로운 일과 추가하기 */}
+      <div className="bg-gray-800 p-6 rounded-xl shadow-lg mb-8 border border-gray-700">
+        <h2 className="text-xl font-semibold mb-4 text-white">새로운 일과 추가하기</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <input
             type="time"
             value={newRoutine.time}
             onChange={(e) => setNewRoutine({...newRoutine, time: e.target.value})}
-            className="border p-2 rounded"
+            className="border border-gray-600 bg-gray-700 text-white p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="시간"
           />
           <input
             type="text"
             value={newRoutine.title}
             onChange={(e) => setNewRoutine({...newRoutine, title: e.target.value})}
-            className="border p-2 rounded"
+            className="border border-gray-600 bg-gray-700 text-white p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="일과 제목"
           />
           <input
             type="color"
             value={newRoutine.color}
             onChange={(e) => setNewRoutine({...newRoutine, color: e.target.value})}
-            className="border p-2 rounded"
+            className="border border-gray-600 bg-gray-700 p-2 rounded-lg h-10"
           />
           <input
             type="text"
             value={newRoutine.message}
             onChange={(e) => setNewRoutine({...newRoutine, message: e.target.value})}
-            className="border p-2 rounded"
+            className="border border-gray-600 bg-gray-700 text-white p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="응원 메시지"
           />
           <div className="col-span-2">
-            <label className="block mb-2">반복 요일</label>
+            <label className="block mb-2 text-gray-300">반복 요일</label>
             <div className="flex gap-2">
               {['월', '화', '수', '목', '금', '토', '일'].map((day) => (
                 <button
@@ -285,10 +289,10 @@ export default function Home() {
                       : [...newRoutine.repeat, day];
                     setNewRoutine({...newRoutine, repeat: newRepeat});
                   }}
-                  className={`p-2 rounded ${
+                  className={`p-2 rounded-lg transition-colors duration-200 ${
                     newRoutine.repeat.includes(day)
                       ? 'bg-blue-500 text-white'
-                      : 'bg-gray-200'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                   }`}
                 >
                   {day}
@@ -299,7 +303,7 @@ export default function Home() {
         </div>
         <button
           onClick={addRoutine}
-          className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          className="mt-4 bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 font-semibold"
         >
           일과 추가하기
         </button>
