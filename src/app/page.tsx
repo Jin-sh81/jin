@@ -89,7 +89,13 @@ function SortableRoutine({ routine, onToggle, onDelete, onNotificationToggle, on
 }
 
 export default function Home() {
-  const [routines, setRoutines] = useState<Routine[]>([]);
+  const [routines, setRoutines] = useState<Routine[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('routines');
+      return saved ? JSON.parse(saved) : [];
+    }
+    return [];
+  });
   const [newRoutine, setNewRoutine] = useState({
     time: '',
     title: '',
@@ -139,6 +145,13 @@ export default function Home() {
   // 드래그 센서
   const sensors = useSensors(useSensor(PointerSensor));
 
+  // 루틴 데이터가 변경될 때마다 localStorage에 저장
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('routines', JSON.stringify(routines));
+    }
+  }, [routines]);
+
   // 루틴 추가
   const addRoutine = () => {
     if (newRoutine.time && newRoutine.title) {
@@ -152,7 +165,7 @@ export default function Home() {
         message: newRoutine.message,
         notification: false
       };
-      setRoutines([...routines, routine]);
+      setRoutines(prevRoutines => [...prevRoutines, routine]);
       setNewRoutine({ time: '', title: '', color: '#000000', message: '', repeat: [] });
     }
   };
@@ -173,6 +186,11 @@ export default function Home() {
   const calculateProgress = () => {
     const completed = routines.filter(r => r.completed).length;
     return routines.length > 0 ? Math.round((completed / routines.length) * 100) : 0;
+  };
+
+  // 루틴 삭제
+  const deleteRoutine = (id: string) => {
+    setRoutines(prevRoutines => prevRoutines.filter(routine => routine.id !== id));
   };
 
   return (
@@ -216,26 +234,30 @@ export default function Home() {
                   key={routine.id}
                   routine={routine}
                   onToggle={(id) => {
-                    setRoutines(routines.map(r =>
-                      r.id === id ? {...r, completed: !r.completed} : r
-                    ));
+                    setRoutines(prevRoutines =>
+                      prevRoutines.map(r =>
+                        r.id === id ? {...r, completed: !r.completed} : r
+                      )
+                    );
                   }}
-                  onDelete={(id) => {
-                    setRoutines(routines.filter(r => r.id !== id));
-                  }}
+                  onDelete={deleteRoutine}
                   onNotificationToggle={(id) => {
-                    setRoutines(routines.map(r =>
-                      r.id === id ? {...r, notification: !r.notification} : r
-                    ));
+                    setRoutines(prevRoutines =>
+                      prevRoutines.map(r =>
+                        r.id === id ? {...r, notification: !r.notification} : r
+                      )
+                    );
                   }}
                   onImageUpload={(id, type, file) => {
                     const reader = new FileReader();
                     reader.onloadend = () => {
-                      setRoutines(routines.map(r =>
-                        r.id === id
-                          ? {...r, [type === 'before' ? 'beforeImage' : 'afterImage']: reader.result as string}
-                          : r
-                      ));
+                      setRoutines(prevRoutines =>
+                        prevRoutines.map(r =>
+                          r.id === id
+                            ? {...r, [type === 'before' ? 'beforeImage' : 'afterImage']: reader.result as string}
+                            : r
+                        )
+                      );
                     };
                     reader.readAsDataURL(file);
                   }}
