@@ -58,6 +58,7 @@ function SortableRoutine({ routine, onToggle, onDelete, onNotificationToggle, on
         )}
         <div className="flex gap-2 mt-2">
           <button
+            type="button"
             onClick={() => onNotificationToggle(routine.id)}
             className={`p-2 rounded-lg transition-colors duration-200 ${
               routine.notification 
@@ -81,6 +82,7 @@ function SortableRoutine({ routine, onToggle, onDelete, onNotificationToggle, on
               <FaCamera />
             </label>
             <button
+              type="button"
               onClick={onShowImages}
               className="p-2 rounded-lg bg-gray-600 text-gray-300 hover:bg-gray-500 transition-colors duration-200"
             >
@@ -88,8 +90,11 @@ function SortableRoutine({ routine, onToggle, onDelete, onNotificationToggle, on
             </button>
           </div>
           <button
+            type="button"
             onClick={() => onDelete(routine.id)}
             className="p-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors duration-200"
+            style={{ cursor: 'pointer' }}
+            aria-label="삭제"
           >
             <FaTrash />
           </button>
@@ -110,7 +115,7 @@ export default function Home() {
     repeat: [] as string[]
   });
 
-  // 2. 마운트 시 localStorage에서 불러오기 (딱 한 번만)
+  // 2. 마운트 시 localStorage에서 한 번만 불러오기
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('routines');
