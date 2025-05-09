@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FaTrash, FaBell, FaCamera, FaImage } from 'react-icons/fa';
+import { FaTrash, FaBell, FaCamera, FaImage, FaHistory } from 'react-icons/fa';
+import Link from 'next/link';
 
 interface Routine {
   id: string;
@@ -205,13 +206,26 @@ export default function Home() {
     return routines.length > 0 ? Math.round((completed / routines.length) * 100) : 0;
   };
 
-  // 루틴 삭제
-  const deleteRoutine = (id: string) => {
+  // 루틴 토글
+  const toggleRoutine = (id: string) => {
     setRoutines(prevRoutines => {
-      const newRoutines = prevRoutines.filter(routine => routine.id !== id);
+      const newRoutines = prevRoutines.map(routine =>
+        routine.id === id ? { ...routine, completed: !routine.completed } : routine
+      );
       localStorage.setItem('routines', JSON.stringify(newRoutines));
       return newRoutines;
     });
+  };
+
+  // 루틴 삭제
+  const deleteRoutine = (id: string) => {
+    if (window.confirm('정말로 이 일과를 삭제하시겠습니까?')) {
+      setRoutines(prevRoutines => {
+        const newRoutines = prevRoutines.filter(routine => routine.id !== id);
+        localStorage.setItem('routines', JSON.stringify(newRoutines));
+        return newRoutines;
+      });
+    }
   };
 
   // 이미지 모달
@@ -268,10 +282,16 @@ export default function Home() {
 
       {/* 오늘의 진행률 + D+N 카운터 */}
       <div className="bg-gray-800 p-6 rounded-xl shadow-lg mb-8 border border-gray-700">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-white">
-          오늘의 진행률
-          <span className="text-base text-blue-400 font-bold">{getDaysCount()}</span>
-        </h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold flex items-center gap-2 text-white">
+            오늘의 진행률
+            <span className="text-base text-blue-400 font-bold">{getDaysCount()}</span>
+          </h2>
+          <Link href="/history" className="flex items-center text-blue-400 hover:text-blue-300">
+            <FaHistory className="mr-2" />
+            과거 일정 보기
+          </Link>
+        </div>
         <div className="w-full bg-gray-700 rounded-full h-4">
           <div
             className="bg-blue-500 h-4 rounded-full transition-all duration-300"
@@ -298,13 +318,7 @@ export default function Home() {
                 <SortableRoutine
                   key={routine.id}
                   routine={routine}
-                  onToggle={(id) => {
-                    setRoutines(prevRoutines =>
-                      prevRoutines.map(r =>
-                        r.id === id ? {...r, completed: !r.completed} : r
-                      )
-                    );
-                  }}
+                  onToggle={toggleRoutine}
                   onDelete={deleteRoutine}
                   onNotificationToggle={(id) => {
                     setRoutines(prevRoutines =>
@@ -339,17 +353,10 @@ export default function Home() {
         <h2 className="text-xl font-semibold mb-4 text-white">새로운 일과 추가하기</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <input
-            type="text"
+            type="time"
             value={newRoutine.time}
-            onChange={(e) => {
-              const value = e.target.value;
-              // HH:mm 형식 검증
-              if (/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(value) || value === '') {
-                setNewRoutine({...newRoutine, time: value});
-              }
-            }}
+            onChange={(e) => setNewRoutine({...newRoutine, time: e.target.value})}
             className="border border-gray-600 bg-gray-700 text-white p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="시간 (HH:mm)"
           />
           <input
             type="text"
