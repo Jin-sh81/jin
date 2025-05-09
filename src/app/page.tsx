@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FaTrash, FaBell, FaCamera, FaImage, FaHistory, FaTimes } from 'react-icons/fa';
+import { FaCamera, FaImage, FaHistory, FaTimes } from 'react-icons/fa';
 import Link from 'next/link';
 
 interface Routine {
