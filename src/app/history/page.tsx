@@ -83,6 +83,15 @@ export default function History() {
     });
   };
 
+  // 날짜별로 그룹핑
+  const routinesByDate = routines.reduce((acc, routine) => {
+    const date = routine.createdAt.slice(0, 10); // YYYY-MM-DD
+    if (!acc[date]) acc[date] = [];
+    acc[date].push(routine);
+    return acc;
+  }, {} as Record<string, Routine[]>);
+  const sortedDates = Object.keys(routinesByDate).sort((a, b) => b.localeCompare(a));
+
   return (
     <div className="min-h-screen p-8 bg-gray-900 text-gray-100">
       <div className="max-w-4xl mx-auto">
@@ -95,35 +104,41 @@ export default function History() {
 
         <h1 className="text-2xl font-bold mb-6">과거 일정 기록</h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {routines.map((routine) => (
-            <div
-              key={routine.id}
-              className="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors duration-200"
-              onClick={() => setSelectedRoutine(routine)}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="font-semibold text-white">{routine.time} - {routine.title}</div>
-                <div className={`w-3 h-3 rounded-full ${routine.completed ? 'bg-green-500' : 'bg-red-500'}`} />
-              </div>
-              {routine.message && (
-                <div className="text-sm text-gray-400 mb-4">{routine.message}</div>
-              )}
-              <div className="flex gap-2">
-                {routine.beforeImage && (
-                  <div className="w-20 h-20 rounded-lg overflow-hidden">
-                    <img src={routine.beforeImage} alt="Before" className="w-full h-full object-cover" />
+        {/* 날짜별로 그룹핑하여 출력 */}
+        {sortedDates.map(date => (
+          <div key={date} className="mb-8">
+            <div className="text-lg font-bold mb-2">{date}</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {routinesByDate[date].map(routine => (
+                <div
+                  key={routine.id}
+                  className="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors duration-200"
+                  onClick={() => setSelectedRoutine(routine)}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="font-semibold text-white">{routine.time} - {routine.title}</div>
+                    <div className={`w-3 h-3 rounded-full ${routine.completed ? 'bg-green-500' : 'bg-red-500'}`} />
                   </div>
-                )}
-                {routine.afterImage && (
-                  <div className="w-20 h-20 rounded-lg overflow-hidden">
-                    <img src={routine.afterImage} alt="After" className="w-full h-full object-cover" />
+                  {routine.message && (
+                    <div className="text-sm text-gray-400 mb-4">{routine.message}</div>
+                  )}
+                  <div className="flex gap-2">
+                    {routine.beforeImage && (
+                      <div className="w-20 h-20 rounded-lg overflow-hidden">
+                        <img src={routine.beforeImage} alt="Before" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    {routine.afterImage && (
+                      <div className="w-20 h-20 rounded-lg overflow-hidden">
+                        <img src={routine.afterImage} alt="After" className="w-full h-full object-cover" />
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
 
         {/* 상세 보기 모달 */}
         {selectedRoutine && (

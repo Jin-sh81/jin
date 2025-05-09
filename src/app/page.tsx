@@ -245,7 +245,7 @@ export default function Home() {
 
   // 삭제 함수
   const deleteRoutine = (id: string) => {
-    setRoutines(prev => prev.filter(r => r.id !== id));
+    setRoutines(prev => prev.map(r => r.id === id ? { ...r, completed: true } : r));
   };
 
   // 이미지 모달
@@ -366,11 +366,11 @@ export default function Home() {
           onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={routines.map(r => r.id)}
+            items={routines.filter((r: Routine) => !r.completed).map(r => r.id)}
             strategy={verticalListSortingStrategy}
           >
             <div className="space-y-4">
-              {routines.map((routine) => (
+              {routines.filter((r: Routine) => !r.completed).map((routine: Routine) => (
                 <SortableRoutine
                   key={routine.id}
                   routine={routine}
