@@ -335,26 +335,26 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <input
             type="time"
-            value={newRoutine.time}
+            value={newRoutine.time || ''}
             onChange={(e) => setNewRoutine({...newRoutine, time: e.target.value})}
             className="border border-gray-600 bg-gray-700 text-white p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
           <input
             type="text"
-            value={newRoutine.title}
+            value={newRoutine.title || ''}
             onChange={(e) => setNewRoutine({...newRoutine, title: e.target.value})}
             className="border border-gray-600 bg-gray-700 text-white p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="일과 제목"
           />
           <input
             type="color"
-            value={newRoutine.color}
+            value={newRoutine.color || '#000000'}
             onChange={(e) => setNewRoutine({...newRoutine, color: e.target.value})}
             className="border border-gray-600 bg-gray-700 p-2 rounded-lg h-10"
           />
           <input
             type="text"
-            value={newRoutine.message}
+            value={newRoutine.message || ''}
             onChange={(e) => setNewRoutine({...newRoutine, message: e.target.value})}
             className="border border-gray-600 bg-gray-700 text-white p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="응원 메시지"
