@@ -51,7 +51,8 @@ function SortableRoutine({ routine, onToggle, onDelete, onImageUpload, onShowIma
       <button
         type="button"
         onClick={e => { e.stopPropagation(); onDelete(routine.id); }}
-        className="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-lg z-10"
+        onPointerDown={e => e.stopPropagation()}
+        className="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-lg z-50"
         style={{ cursor: 'pointer' }}
         aria-label="삭제"
       >
@@ -61,6 +62,7 @@ function SortableRoutine({ routine, onToggle, onDelete, onImageUpload, onShowIma
         type="checkbox"
         checked={routine.completed}
         onClick={e => e.stopPropagation()}
+        onPointerDown={e => e.stopPropagation()}
         onChange={() => onToggle(routine.id)}
         className="mr-4 w-5 h-5 rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
       />
