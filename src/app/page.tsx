@@ -127,7 +127,9 @@ export default function Home() {
 
   // 날짜, 요일, 시간 표시용 상태
   const [now, setNow] = useState(new Date());
+  const [mounted, setMounted] = useState(false);
   useEffect(() => {
+    setMounted(true);
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
@@ -255,11 +257,12 @@ export default function Home() {
 
   return (
     <div className="min-h-screen p-8 bg-gray-900 text-gray-100">
-      {/* 날짜, 요일, 시간 표시 */}
-      <div className="text-center mb-4">
-        <div className="text-lg font-semibold text-gray-300">{dateString} ({dayString})</div>
-        <div className="text-2xl font-bold text-white">{timeString}</div>
-      </div>
+      {mounted && (
+        <div className="text-center mb-4">
+          <div className="text-lg font-semibold text-gray-300">{dateString} ({dayString})</div>
+          <div className="text-2xl font-bold text-white">{timeString}</div>
+        </div>
+      )}
 
       {/* 오늘의 진행률 + D+N 카운터 */}
       <div className="bg-gray-800 p-6 rounded-xl shadow-lg mb-8 border border-gray-700">
