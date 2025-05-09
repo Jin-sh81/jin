@@ -16,6 +16,7 @@ interface Routine {
   beforeImage?: string;
   afterImage?: string;
   createdAt: string;
+  files?: { name: string; data: string }[];
 }
 
 export default function History() {
@@ -30,6 +31,57 @@ export default function History() {
       }
     }
   }, []);
+
+  // After 이미지 업로드
+  const handleAfterImageUpload = (file: File) => {
+    if (!selectedRoutine) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const updated = routines.map(r =>
+        r.id === selectedRoutine.id ? { ...r, afterImage: reader.result as string } : r
+      );
+      setRoutines(updated);
+      localStorage.setItem('routines', JSON.stringify(updated));
+      setSelectedRoutine({ ...selectedRoutine, afterImage: reader.result as string });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // 파일 업로드
+  const handleFileUpload = (file: File) => {
+    if (!selectedRoutine) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const updated = routines.map(r =>
+        r.id === selectedRoutine.id
+          ? { ...r, files: [ ...(r.files || []), { name: file.name, data: reader.result as string } ] }
+          : r
+      );
+      setRoutines(updated);
+      localStorage.setItem('routines', JSON.stringify(updated));
+      setSelectedRoutine({
+        ...selectedRoutine,
+        files: [ ...(selectedRoutine.files || []), { name: file.name, data: reader.result as string } ]
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // 파일 삭제
+  const handleFileDelete = (fileName: string) => {
+    if (!selectedRoutine) return;
+    const updated = routines.map(r =>
+      r.id === selectedRoutine.id
+        ? { ...r, files: (r.files || []).filter(f => f.name !== fileName) }
+        : r
+    );
+    setRoutines(updated);
+    localStorage.setItem('routines', JSON.stringify(updated));
+    setSelectedRoutine({
+      ...selectedRoutine,
+      files: (selectedRoutine.files || []).filter(f => f.name !== fileName)
+    });
+  };
 
   return (
     <div className="min-h-screen p-8 bg-gray-900 text-gray-100">
@@ -104,14 +156,54 @@ export default function History() {
                     <img 
                       src={selectedRoutine.afterImage} 
                       alt="After" 
-                      className="w-full rounded-lg"
+                      className="w-full rounded-lg mb-2"
                     />
                   ) : (
-                    <div className="bg-gray-700 rounded-lg p-4 text-center text-gray-400">
+                    <div className="bg-gray-700 rounded-lg p-4 text-center text-gray-400 mb-2">
                       After 이미지 없음
                     </div>
                   )}
+                  {/* After 이미지 업로드 */}
+                  <label className="block mt-2 text-sm text-blue-300 cursor-pointer hover:underline">
+                    After 사진 업로드
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (file) handleAfterImageUpload(file);
+                      }}
+                      className="hidden"
+                    />
+                  </label>
                 </div>
+              </div>
+              {/* 파일 업로드 및 리스트 */}
+              <div className="mt-6">
+                <label className="block mb-2 text-gray-300 cursor-pointer hover:underline">
+                  파일 첨부하기
+                  <input
+                    type="file"
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileUpload(file);
+                    }}
+                    className="hidden"
+                  />
+                </label>
+                {selectedRoutine.files && selectedRoutine.files.length > 0 && (
+                  <div className="mt-2">
+                    <div className="text-xs text-gray-400 mb-1">첨부 파일:</div>
+                    <ul className="space-y-1">
+                      {selectedRoutine.files.map(f => (
+                        <li key={f.name} className="flex items-center gap-2">
+                          <a href={f.data} download={f.name} className="underline text-blue-300" target="_blank" rel="noopener noreferrer">{f.name}</a>
+                          <button type="button" onClick={() => handleFileDelete(f.name)} className="text-red-400 hover:text-red-600 text-xs">삭제</button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
               <button
                 onClick={() => setSelectedRoutine(null)}
