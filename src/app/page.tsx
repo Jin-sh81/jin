@@ -19,15 +19,18 @@ interface Routine {
   beforeImage?: string;
   afterImage?: string;
   createdAt: string;
+  files?: { name: string; data: string }[];
 }
 
-function SortableRoutine({ routine, onToggle, onDelete, onNotificationToggle, onImageUpload, onShowImages }: {
+function SortableRoutine({ routine, onToggle, onDelete, onNotificationToggle, onImageUpload, onShowImages, onFileUpload, onFileDelete }: {
   routine: Routine;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onNotificationToggle: (id: string) => void;
   onImageUpload: (id: string, type: 'before' | 'after', file: File) => void;
   onShowImages: () => void;
+  onFileUpload: (id: string, file: File) => void;
+  onFileDelete: (id: string, fileName: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: routine.id });
   const style = {
@@ -89,6 +92,17 @@ function SortableRoutine({ routine, onToggle, onDelete, onNotificationToggle, on
               <FaImage />
             </button>
           </div>
+          <label className="p-2 rounded-lg bg-gray-600 text-gray-300 hover:bg-gray-500 cursor-pointer transition-colors duration-200">
+            <input
+              type="file"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) onFileUpload(routine.id, file);
+              }}
+              className="hidden"
+            />
+            📎
+          </label>
           <button
             type="button"
             onClick={() => onDelete(routine.id)}
@@ -99,6 +113,20 @@ function SortableRoutine({ routine, onToggle, onDelete, onNotificationToggle, on
             <FaTrash />
           </button>
         </div>
+        {/* 파일 리스트 */}
+        {routine.files && routine.files.length > 0 && (
+          <div className="mt-2">
+            <div className="text-xs text-gray-400 mb-1">첨부 파일:</div>
+            <ul className="space-y-1">
+              {routine.files.map(f => (
+                <li key={f.name} className="flex items-center gap-2">
+                  <a href={f.data} download={f.name} className="underline text-blue-300" target="_blank" rel="noopener noreferrer">{f.name}</a>
+                  <button type="button" onClick={() => onFileDelete(routine.id, f.name)} className="text-red-400 hover:text-red-600 text-xs">삭제</button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -260,6 +288,35 @@ export default function Home() {
     setShowImageModal({ show: true, routine });
   };
 
+  // 파일 업로드 핸들러
+  const handleFileUpload = (id: string, file: File) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setRoutines(prevRoutines =>
+        prevRoutines.map(r =>
+          r.id === id
+            ? {
+                ...r,
+                files: [ ...(r.files || []), { name: file.name, data: reader.result as string } ]
+              }
+            : r
+        )
+      );
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // 파일 삭제 핸들러
+  const handleFileDelete = (id: string, fileName: string) => {
+    setRoutines(prevRoutines =>
+      prevRoutines.map(r =>
+        r.id === id
+          ? { ...r, files: (r.files || []).filter(f => f.name !== fileName) }
+          : r
+      )
+    );
+  };
+
   return (
     <div className="min-h-screen p-8 bg-gray-900 text-gray-100">
       {mounted && (
@@ -330,6 +387,8 @@ export default function Home() {
                     reader.readAsDataURL(file);
                   }}
                   onShowImages={() => showImages(routine)}
+                  onFileUpload={handleFileUpload}
+                  onFileDelete={handleFileDelete}
                 />
               ))}
             </div>
