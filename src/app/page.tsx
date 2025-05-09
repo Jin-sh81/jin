@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FaTrash, FaBell, FaCamera, FaImage, FaHistory } from 'react-icons/fa';
+import { FaTrash, FaBell, FaCamera, FaImage, FaHistory, FaTimes } from 'react-icons/fa';
 import Link from 'next/link';
 
 interface Routine {
@@ -22,11 +22,10 @@ interface Routine {
   files?: { name: string; data: string }[];
 }
 
-function SortableRoutine({ routine, onToggle, onDelete, onNotificationToggle, onImageUpload, onShowImages, onFileUpload, onFileDelete }: {
+function SortableRoutine({ routine, onToggle, onDelete, onImageUpload, onShowImages, onFileUpload, onFileDelete }: {
   routine: Routine;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
-  onNotificationToggle: (id: string) => void;
   onImageUpload: (id: string, type: 'before' | 'after', file: File) => void;
   onShowImages: () => void;
   onFileUpload: (id: string, file: File) => void;
@@ -37,7 +36,8 @@ function SortableRoutine({ routine, onToggle, onDelete, onNotificationToggle, on
     transform: CSS.Transform.toString(transform),
     transition,
     borderLeftColor: routine.color,
-    borderLeftWidth: '4px'
+    borderLeftWidth: '4px',
+    position: 'relative' as React.CSSProperties['position']
   };
 
   return (
@@ -46,8 +46,17 @@ function SortableRoutine({ routine, onToggle, onDelete, onNotificationToggle, on
       style={style}
       {...attributes}
       {...listeners}
-      className="flex items-center p-4 bg-gray-700 border border-gray-600 rounded-lg mb-2 cursor-move hover:bg-gray-600 transition-colors duration-200"
+      className="flex items-center p-4 bg-gray-700 border border-gray-600 rounded-lg mb-2 cursor-move hover:bg-gray-600 transition-colors duration-200 relative"
     >
+      <button
+        type="button"
+        onClick={e => { e.stopPropagation(); onDelete(routine.id); }}
+        className="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-lg z-10"
+        style={{ cursor: 'pointer' }}
+        aria-label="삭제"
+      >
+        <FaTimes />
+      </button>
       <input
         type="checkbox"
         checked={routine.completed}
@@ -61,17 +70,6 @@ function SortableRoutine({ routine, onToggle, onDelete, onNotificationToggle, on
           <div className="text-sm text-gray-400">{routine.message}</div>
         )}
         <div className="flex gap-2 mt-2">
-          <button
-            type="button"
-            onClick={() => onNotificationToggle(routine.id)}
-            className={`p-2 rounded-lg transition-colors duration-200 ${
-              routine.notification 
-                ? 'bg-blue-500 text-white' 
-                : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-            }`}
-          >
-            <FaBell />
-          </button>
           <div className="flex gap-2">
             <label className="p-2 rounded-lg bg-gray-600 text-gray-300 hover:bg-gray-500 cursor-pointer transition-colors duration-200">
               <input
@@ -104,17 +102,7 @@ function SortableRoutine({ routine, onToggle, onDelete, onNotificationToggle, on
             />
             📎
           </label>
-          <button
-            type="button"
-            onClick={e => { e.stopPropagation(); onDelete(routine.id); }}
-            className="p-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors duration-200"
-            style={{ cursor: 'pointer' }}
-            aria-label="삭제"
-          >
-            <FaTrash />
-          </button>
         </div>
-        {/* 파일 리스트 */}
         {routine.files && routine.files.length > 0 && (
           <div className="mt-2">
             <div className="text-xs text-gray-400 mb-1">첨부 파일:</div>
@@ -141,7 +129,8 @@ export default function Home() {
     title: '',
     color: '#000000',
     message: '',
-    repeat: [] as string[]
+    repeat: [] as string[],
+    notification: false
   });
 
   // 2. 마운트 시 localStorage에서 한 번만 불러오기
@@ -213,11 +202,11 @@ export default function Home() {
         completed: false,
         repeat: newRoutine.repeat,
         message: newRoutine.message,
-        notification: false,
+        notification: !!newRoutine.notification,
         createdAt: new Date().toISOString()
       };
       setRoutines(prevRoutines => [...prevRoutines, routine]);
-      setNewRoutine({ time: '', title: '', color: '#000000', message: '', repeat: [] });
+      setNewRoutine({ time: '', title: '', color: '#000000', message: '', repeat: [], notification: false });
     }
   };
 
@@ -379,13 +368,6 @@ export default function Home() {
                   routine={routine}
                   onToggle={toggleRoutine}
                   onDelete={deleteRoutine}
-                  onNotificationToggle={(id) => {
-                    setRoutines(prevRoutines =>
-                      prevRoutines.map(r =>
-                        r.id === id ? {...r, notification: !r.notification} : r
-                      )
-                    );
-                  }}
                   onImageUpload={(id, type, file) => {
                     const reader = new FileReader();
                     reader.onloadend = () => {
@@ -439,6 +421,16 @@ export default function Home() {
             className="border border-gray-600 bg-gray-700 text-white p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="응원 메시지"
           />
+          <div className="flex items-center col-span-2 mt-2">
+            <input
+              type="checkbox"
+              id="newRoutineNotification"
+              checked={!!newRoutine.notification}
+              onChange={e => setNewRoutine({...newRoutine, notification: e.target.checked})}
+              className="mr-2 w-5 h-5 rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+            />
+            <label htmlFor="newRoutineNotification" className="text-gray-300">알람(알림) 설정</label>
+          </div>
           <div className="col-span-2">
             <label className="block mb-2 text-gray-300">반복 요일</label>
             <div className="flex gap-2">
