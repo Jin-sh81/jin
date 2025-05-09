@@ -71,6 +71,12 @@ function SortableRoutine({ routine, onToggle, onDelete, onImageUpload, onShowIma
         {routine.message && (
           <div className="text-sm text-gray-400">{routine.message}</div>
         )}
+        {/* Before 이미지 미리보기 */}
+        {routine.beforeImage && (
+          <div className="my-2">
+            <img src={routine.beforeImage} alt="Before" className="w-24 h-24 object-cover rounded-lg border border-gray-600" />
+          </div>
+        )}
         <div className="flex gap-2 mt-2">
           <div className="flex gap-2">
             <label className="p-2 rounded-lg bg-gray-600 text-gray-300 hover:bg-gray-500 cursor-pointer transition-colors duration-200">
