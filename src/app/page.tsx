@@ -47,7 +47,10 @@ function SortableRoutine({ routine, onToggle, onDelete, onNotificationToggle, on
       <input
         type="checkbox"
         checked={routine.completed}
-        onChange={() => onToggle(routine.id)}
+        onChange={(e) => {
+          e.stopPropagation();
+          onToggle(routine.id);
+        }}
         className="mr-4 w-5 h-5 rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
       />
       <div className="flex-1">
@@ -87,7 +90,10 @@ function SortableRoutine({ routine, onToggle, onDelete, onNotificationToggle, on
             </button>
           </div>
           <button
-            onClick={() => onDelete(routine.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(routine.id);
+            }}
             className="p-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors duration-200"
           >
             <FaTrash />
@@ -201,7 +207,11 @@ export default function Home() {
 
   // 루틴 삭제
   const deleteRoutine = (id: string) => {
-    setRoutines(prevRoutines => prevRoutines.filter(routine => routine.id !== id));
+    setRoutines(prevRoutines => {
+      const newRoutines = prevRoutines.filter(routine => routine.id !== id);
+      localStorage.setItem('routines', JSON.stringify(newRoutines));
+      return newRoutines;
+    });
   };
 
   // 이미지 모달
