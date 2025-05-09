@@ -51,6 +51,7 @@ function SortableRoutine({ routine, onToggle, onDelete, onNotificationToggle, on
       <input
         type="checkbox"
         checked={routine.completed}
+        onClick={e => e.stopPropagation()}
         onChange={() => onToggle(routine.id)}
         className="mr-4 w-5 h-5 rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
       />
@@ -105,7 +106,7 @@ function SortableRoutine({ routine, onToggle, onDelete, onNotificationToggle, on
           </label>
           <button
             type="button"
-            onClick={() => onDelete(routine.id)}
+            onClick={e => { e.stopPropagation(); onDelete(routine.id); }}
             className="p-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors duration-200"
             style={{ cursor: 'pointer' }}
             aria-label="삭제"
@@ -256,6 +257,12 @@ export default function Home() {
 
   // 알람 소리 설정
   useEffect(() => {
+    // 알람 소리 파일 존재 여부 확인
+    fetch('/alarm.mp3').then(res => {
+      if (!res.ok) {
+        console.warn('알람 소리 파일이 없습니다. public/alarm.mp3를 추가하세요.');
+      }
+    });
     audioRef.current = new Audio('/alarm.mp3');
   }, []);
 
@@ -271,6 +278,12 @@ export default function Home() {
             new Notification('루틴 알림', {
               body: `${routine.title} - ${routine.message || '할 시간이에요!'}`,
               icon: '/icon.png'
+            });
+          } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission().then(permission => {
+              if (permission !== 'granted') {
+                alert('브라우저 알림 권한을 허용해야 알람이 정상 동작합니다.');
+              }
             });
           }
         }
