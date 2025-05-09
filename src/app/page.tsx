@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FaTrash, FaBell, FaCamera } from 'react-icons/fa';
+import { FaTrash, FaBell, FaCamera, FaImage } from 'react-icons/fa';
 
 interface Routine {
   id: string;
@@ -17,14 +17,16 @@ interface Routine {
   notification: boolean;
   beforeImage?: string;
   afterImage?: string;
+  createdAt: string;
 }
 
-function SortableRoutine({ routine, onToggle, onDelete, onNotificationToggle, onImageUpload }: {
+function SortableRoutine({ routine, onToggle, onDelete, onNotificationToggle, onImageUpload, onShowImages }: {
   routine: Routine;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onNotificationToggle: (id: string) => void;
   onImageUpload: (id: string, type: 'before' | 'after', file: File) => void;
+  onShowImages: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: routine.id });
   const style = {
@@ -64,18 +66,26 @@ function SortableRoutine({ routine, onToggle, onDelete, onNotificationToggle, on
           >
             <FaBell />
           </button>
-          <label className="p-2 rounded-lg bg-gray-600 text-gray-300 hover:bg-gray-500 cursor-pointer transition-colors duration-200">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) onImageUpload(routine.id, 'before', file);
-              }}
-              className="hidden"
-            />
-            <FaCamera />
-          </label>
+          <div className="flex gap-2">
+            <label className="p-2 rounded-lg bg-gray-600 text-gray-300 hover:bg-gray-500 cursor-pointer transition-colors duration-200">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) onImageUpload(routine.id, 'before', file);
+                }}
+                className="hidden"
+              />
+              <FaCamera />
+            </label>
+            <button
+              onClick={onShowImages}
+              className="p-2 rounded-lg bg-gray-600 text-gray-300 hover:bg-gray-500 transition-colors duration-200"
+            >
+              <FaImage />
+            </button>
+          </div>
           <button
             onClick={() => onDelete(routine.id)}
             className="p-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors duration-200"
@@ -163,7 +173,8 @@ export default function Home() {
         completed: false,
         repeat: newRoutine.repeat,
         message: newRoutine.message,
-        notification: false
+        notification: false,
+        createdAt: new Date().toISOString()
       };
       setRoutines(prevRoutines => [...prevRoutines, routine]);
       setNewRoutine({ time: '', title: '', color: '#000000', message: '', repeat: [] });
@@ -191,6 +202,50 @@ export default function Home() {
   // 루틴 삭제
   const deleteRoutine = (id: string) => {
     setRoutines(prevRoutines => prevRoutines.filter(routine => routine.id !== id));
+  };
+
+  // 이미지 모달
+  const [showImageModal, setShowImageModal] = useState<{ show: boolean; routine: Routine | null }>({ show: false, routine: null });
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // 알람 소리 설정
+  useEffect(() => {
+    audioRef.current = new Audio('/alarm.mp3'); // 알람 소리 파일 필요
+  }, []);
+
+  // 알람 체크
+  useEffect(() => {
+    const checkAlarms = () => {
+      const now = new Date();
+      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
+      routines.forEach(routine => {
+        if (routine.time === currentTime && routine.notification && !routine.completed) {
+          // 알람 소리 재생
+          audioRef.current?.play();
+          // 브라우저 알림
+          if (Notification.permission === 'granted') {
+            new Notification('루틴 알림', {
+              body: `${routine.title} - ${routine.message || '할 시간이에요!'}`,
+              icon: '/icon.png' // 알림 아이콘 필요
+            });
+          }
+        }
+      });
+    };
+
+    // 알림 권한 요청
+    if (Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
+    const interval = setInterval(checkAlarms, 1000);
+    return () => clearInterval(interval);
+  }, [routines]);
+
+  // 이미지 모달 표시
+  const showImages = (routine: Routine) => {
+    setShowImageModal({ show: true, routine });
   };
 
   return (
@@ -261,6 +316,7 @@ export default function Home() {
                     };
                     reader.readAsDataURL(file);
                   }}
+                  onShowImages={() => showImages(routine)}
                 />
               ))}
             </div>
@@ -273,11 +329,17 @@ export default function Home() {
         <h2 className="text-xl font-semibold mb-4 text-white">새로운 일과 추가하기</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <input
-            type="time"
+            type="text"
             value={newRoutine.time}
-            onChange={(e) => setNewRoutine({...newRoutine, time: e.target.value})}
+            onChange={(e) => {
+              const value = e.target.value;
+              // HH:mm 형식 검증
+              if (/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(value) || value === '') {
+                setNewRoutine({...newRoutine, time: value});
+              }
+            }}
             className="border border-gray-600 bg-gray-700 text-white p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="시간"
+            placeholder="시간 (HH:mm)"
           />
           <input
             type="text"
@@ -330,6 +392,53 @@ export default function Home() {
           일과 추가하기
         </button>
       </div>
+
+      {/* 이미지 모달 */}
+      {showImageModal.show && showImageModal.routine && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-gray-800 p-6 rounded-xl max-w-2xl w-full">
+            <h3 className="text-xl font-semibold mb-4 text-white">
+              {showImageModal.routine.title} - 사진 기록
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <h4 className="text-lg mb-2 text-gray-300">Before</h4>
+                {showImageModal.routine.beforeImage ? (
+                  <img 
+                    src={showImageModal.routine.beforeImage} 
+                    alt="Before" 
+                    className="w-full rounded-lg"
+                  />
+                ) : (
+                  <div className="bg-gray-700 rounded-lg p-4 text-center text-gray-400">
+                    Before 이미지 없음
+                  </div>
+                )}
+              </div>
+              <div>
+                <h4 className="text-lg mb-2 text-gray-300">After</h4>
+                {showImageModal.routine.afterImage ? (
+                  <img 
+                    src={showImageModal.routine.afterImage} 
+                    alt="After" 
+                    className="w-full rounded-lg"
+                  />
+                ) : (
+                  <div className="bg-gray-700 rounded-lg p-4 text-center text-gray-400">
+                    After 이미지 없음
+                  </div>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => setShowImageModal({ show: false, routine: null })}
+              className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
