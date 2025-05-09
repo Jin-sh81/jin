@@ -23,9 +23,11 @@ export default function History() {
   const [selectedRoutine, setSelectedRoutine] = useState<Routine | null>(null);
 
   useEffect(() => {
-    const savedRoutines = localStorage.getItem('routines');
-    if (savedRoutines) {
-      setRoutines(JSON.parse(savedRoutines));
+    if (typeof window !== 'undefined') {
+      const savedRoutines = localStorage.getItem('routines');
+      if (savedRoutines) {
+        setRoutines(JSON.parse(savedRoutines));
+      }
     }
   }, []);
 

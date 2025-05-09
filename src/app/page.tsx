@@ -48,10 +48,7 @@ function SortableRoutine({ routine, onToggle, onDelete, onNotificationToggle, on
       <input
         type="checkbox"
         checked={routine.completed}
-        onChange={(e) => {
-          e.stopPropagation();
-          onToggle(routine.id);
-        }}
+        onChange={() => onToggle(routine.id)}
         className="mr-4 w-5 h-5 rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
       />
       <div className="flex-1">
@@ -91,10 +88,7 @@ function SortableRoutine({ routine, onToggle, onDelete, onNotificationToggle, on
             </button>
           </div>
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(routine.id);
-            }}
+            onClick={() => onDelete(routine.id)}
             className="p-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors duration-200"
           >
             <FaTrash />
@@ -106,13 +100,8 @@ function SortableRoutine({ routine, onToggle, onDelete, onNotificationToggle, on
 }
 
 export default function Home() {
-  const [routines, setRoutines] = useState<Routine[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('routines');
-      return saved ? JSON.parse(saved) : [];
-    }
-    return [];
-  });
+  // 1. 초기값은 빈 배열
+  const [routines, setRoutines] = useState<Routine[]>([]);
   const [newRoutine, setNewRoutine] = useState({
     time: '',
     title: '',
@@ -120,6 +109,21 @@ export default function Home() {
     message: '',
     repeat: [] as string[]
   });
+
+  // 2. 마운트 시 localStorage에서 불러오기 (딱 한 번만)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('routines');
+      if (saved) setRoutines(JSON.parse(saved));
+    }
+  }, []);
+
+  // 3. routines가 바뀔 때만 localStorage에 저장
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('routines', JSON.stringify(routines));
+    }
+  }, [routines]);
 
   // 날짜, 요일, 시간 표시용 상태
   const [now, setNow] = useState(new Date());
@@ -162,13 +166,6 @@ export default function Home() {
   // 드래그 센서
   const sensors = useSensors(useSensor(PointerSensor));
 
-  // 루틴 데이터가 변경될 때마다 localStorage에 저장
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('routines', JSON.stringify(routines));
-    }
-  }, [routines]);
-
   // 루틴 추가
   const addRoutine = () => {
     if (newRoutine.time && newRoutine.title) {
@@ -206,26 +203,16 @@ export default function Home() {
     return routines.length > 0 ? Math.round((completed / routines.length) * 100) : 0;
   };
 
-  // 루틴 토글
+  // 완료 상태 토글 함수
   const toggleRoutine = (id: string) => {
-    setRoutines(prevRoutines => {
-      const newRoutines = prevRoutines.map(routine =>
-        routine.id === id ? { ...routine, completed: !routine.completed } : routine
-      );
-      localStorage.setItem('routines', JSON.stringify(newRoutines));
-      return newRoutines;
-    });
+    setRoutines(prev =>
+      prev.map(r => r.id === id ? { ...r, completed: !r.completed } : r)
+    );
   };
 
-  // 루틴 삭제
+  // 삭제 함수
   const deleteRoutine = (id: string) => {
-    if (window.confirm('정말로 이 일과를 삭제하시겠습니까?')) {
-      setRoutines(prevRoutines => {
-        const newRoutines = prevRoutines.filter(routine => routine.id !== id);
-        localStorage.setItem('routines', JSON.stringify(newRoutines));
-        return newRoutines;
-      });
-    }
+    setRoutines(prev => prev.filter(r => r.id !== id));
   };
 
   // 이미지 모달
@@ -234,7 +221,7 @@ export default function Home() {
 
   // 알람 소리 설정
   useEffect(() => {
-    audioRef.current = new Audio('/alarm.mp3'); // 알람 소리 파일 필요
+    audioRef.current = new Audio('/alarm.mp3');
   }, []);
 
   // 알람 체크
@@ -242,27 +229,21 @@ export default function Home() {
     const checkAlarms = () => {
       const now = new Date();
       const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      
       routines.forEach(routine => {
         if (routine.time === currentTime && routine.notification && !routine.completed) {
-          // 알람 소리 재생
           audioRef.current?.play();
-          // 브라우저 알림
           if (Notification.permission === 'granted') {
             new Notification('루틴 알림', {
               body: `${routine.title} - ${routine.message || '할 시간이에요!'}`,
-              icon: '/icon.png' // 알림 아이콘 필요
+              icon: '/icon.png'
             });
           }
         }
       });
     };
-
-    // 알림 권한 요청
     if (Notification.permission === 'default') {
       Notification.requestPermission();
     }
-
     const interval = setInterval(checkAlarms, 1000);
     return () => clearInterval(interval);
   }, [routines]);
