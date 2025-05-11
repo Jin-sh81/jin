@@ -46,13 +46,15 @@ function SortableRoutine({ routine, onToggle, onDelete, onImageUpload, onShowIma
       style={style}
       {...attributes}
       {...listeners}
-      className="flex items-center p-4 bg-gray-700 border border-gray-600 rounded-lg mb-2 cursor-move hover:bg-gray-600 transition-colors duration-200 relative"
+      className={`flex items-center p-4 bg-card-bg border border-card-border rounded-lg mb-2 cursor-move hover:bg-card-border transition-colors duration-200 relative ${
+        routine.completed ? 'opacity-50' : ''
+      }`}
     >
       <button
         type="button"
         onClick={e => { e.stopPropagation(); onDelete(routine.id); }}
         onPointerDown={e => e.stopPropagation()}
-        className="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-lg z-50"
+        className="absolute top-2 right-2 text-tertiary hover:text-red-500 text-lg z-50"
         style={{ cursor: 'pointer' }}
         aria-label="삭제"
       >
@@ -64,22 +66,32 @@ function SortableRoutine({ routine, onToggle, onDelete, onImageUpload, onShowIma
         onClick={e => e.stopPropagation()}
         onPointerDown={e => e.stopPropagation()}
         onChange={() => onToggle(routine.id)}
-        className="mr-4 w-5 h-5 rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+        className="mr-4 w-5 h-5 rounded border-card-border bg-card-bg text-primary focus:ring-primary"
       />
       <div className="flex-1">
-        <div className="font-semibold text-white">{routine.time} - {routine.title}</div>
+        <div className="font-semibold text-primary">{routine.time} - {routine.title}</div>
         {routine.message && (
-          <div className="text-sm text-gray-400">{routine.message}</div>
+          <div className="text-sm text-secondary">{routine.message}</div>
+        )}
+        {routine.repeat.length > 0 && (
+          <div className="text-xs text-tertiary mt-1">
+            반복: {routine.repeat.join(', ')}
+          </div>
+        )}
+        {routine.notification && (
+          <div className="text-xs text-tertiary mt-1">
+            알림 설정됨
+          </div>
         )}
         {/* Before 이미지 미리보기 */}
         {routine.beforeImage && (
           <div className="my-2">
-            <img src={routine.beforeImage} alt="Before" className="w-24 h-24 object-cover rounded-lg border border-gray-600" />
+            <img src={routine.beforeImage} alt="Before" className="w-24 h-24 object-cover rounded-lg border border-card-border" />
           </div>
         )}
         <div className="flex gap-2 mt-2">
           <div className="flex gap-2">
-            <label className="p-2 rounded-lg bg-gray-600 text-gray-300 hover:bg-gray-500 cursor-pointer transition-colors duration-200">
+            <label className="p-2 rounded-lg bg-card-bg text-secondary hover:bg-card-border cursor-pointer transition-colors duration-200">
               <input
                 type="file"
                 accept="image/*"
@@ -94,12 +106,12 @@ function SortableRoutine({ routine, onToggle, onDelete, onImageUpload, onShowIma
             <button
               type="button"
               onClick={onShowImages}
-              className="p-2 rounded-lg bg-gray-600 text-gray-300 hover:bg-gray-500 transition-colors duration-200"
+              className="p-2 rounded-lg bg-card-bg text-secondary hover:bg-card-border transition-colors duration-200"
             >
               <FaImage />
             </button>
           </div>
-          <label className="p-2 rounded-lg bg-gray-600 text-gray-300 hover:bg-gray-500 cursor-pointer transition-colors duration-200">
+          <label className="p-2 rounded-lg bg-card-bg text-secondary hover:bg-card-border cursor-pointer transition-colors duration-200">
             <input
               type="file"
               onChange={(e) => {
@@ -113,11 +125,11 @@ function SortableRoutine({ routine, onToggle, onDelete, onImageUpload, onShowIma
         </div>
         {routine.files && routine.files.length > 0 && (
           <div className="mt-2">
-            <div className="text-xs text-gray-400 mb-1">첨부 파일:</div>
+            <div className="text-xs text-tertiary mb-1">첨부 파일:</div>
             <ul className="space-y-1">
               {routine.files.map(f => (
                 <li key={f.name} className="flex items-center gap-2">
-                  <a href={f.data} download={f.name} className="underline text-blue-300" target="_blank" rel="noopener noreferrer">{f.name}</a>
+                  <a href={f.data} download={f.name} className="underline text-primary" target="_blank" rel="noopener noreferrer">{f.name}</a>
                   <button type="button" onClick={() => onFileDelete(routine.id, f.name)} className="text-red-400 hover:text-red-600 text-xs">삭제</button>
                 </li>
               ))}
@@ -201,21 +213,29 @@ export default function Home() {
 
   // 루틴 추가
   const addRoutine = () => {
-    if (newRoutine.time && newRoutine.title) {
-      const routine: Routine = {
-        id: Date.now().toString(),
-        time: newRoutine.time,
-        title: newRoutine.title,
-        color: newRoutine.color,
-        completed: false,
-        repeat: newRoutine.repeat,
-        message: newRoutine.message,
-        notification: !!newRoutine.notification,
-        createdAt: new Date().toISOString()
-      };
-      setRoutines(prevRoutines => [...prevRoutines, routine]);
-      setNewRoutine({ time: '', title: '', color: '#000000', message: '', repeat: [], notification: false });
+    if (!newRoutine.time) {
+      alert('시간을 입력해주세요.');
+      return;
     }
+    if (!newRoutine.title.trim()) {
+      alert('제목을 입력해주세요.');
+      return;
+    }
+
+    const routine: Routine = {
+      id: Date.now().toString(),
+      time: newRoutine.time,
+      title: newRoutine.title.trim(),
+      color: newRoutine.color,
+      completed: false,
+      repeat: newRoutine.repeat,
+      message: newRoutine.message.trim(),
+      notification: !!newRoutine.notification,
+      createdAt: new Date().toISOString()
+    };
+
+    setRoutines(prevRoutines => [...prevRoutines, routine]);
+    setNewRoutine({ time: '', title: '', color: '#000000', message: '', repeat: [], notification: false });
   };
 
   // 드래그 앤 드롭
@@ -263,32 +283,41 @@ export default function Home() {
     audioRef.current = new Audio('/alarm.mp3');
   }, []);
 
-  // 알람 체크
+  // 알림 권한 요청 및 설정
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }
+  }, []);
+
+  // 알림 설정
   useEffect(() => {
     const checkAlarms = () => {
       const now = new Date();
       const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
       routines.forEach(routine => {
         if (routine.time === currentTime && routine.notification && !routine.completed) {
-          audioRef.current?.play();
+          // 알림 소리 재생
+          if (audioRef.current) {
+            audioRef.current.play().catch(error => {
+              console.error('알림 소리 재생 실패:', error);
+            });
+          }
+
+          // 브라우저 알림
           if (Notification.permission === 'granted') {
             new Notification('루틴 알림', {
               body: `${routine.title} - ${routine.message || '할 시간이에요!'}`,
               icon: '/icon.png'
             });
-          } else if (Notification.permission !== 'denied') {
-            Notification.requestPermission().then(permission => {
-              if (permission !== 'granted') {
-                alert('브라우저 알림 권한을 허용해야 알람이 정상 동작합니다.');
-              }
-            });
           }
         }
       });
     };
-    if (Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
+
     const interval = setInterval(checkAlarms, 1000);
     return () => clearInterval(interval);
   }, [routines]);
@@ -417,43 +446,49 @@ export default function Home() {
       {/* 오늘의 일과 */}
       <div className="card p-6 rounded-xl shadow-lg mb-8 border">
         <h2 className="text-xl font-semibold mb-4 text-primary">오늘의 일과</h2>
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={routines.filter((r: Routine) => !r.completed).map(r => r.id)}
-            strategy={verticalListSortingStrategy}
+        {routines.length === 0 ? (
+          <div className="text-center py-8 text-secondary">
+            아직 추가된 일과가 없습니다. 새로운 일과를 추가해보세요!
+          </div>
+        ) : (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
           >
-            <div className="space-y-4">
-              {routines.filter((r: Routine) => !r.completed).map((routine: Routine) => (
-                <SortableRoutine
-                  key={routine.id}
-                  routine={routine}
-                  onToggle={toggleRoutine}
-                  onDelete={deleteRoutine}
-                  onImageUpload={(id, type, file) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                      setRoutines(prevRoutines =>
-                        prevRoutines.map(r =>
-                          r.id === id
-                            ? {...r, [type === 'before' ? 'beforeImage' : 'afterImage']: reader.result as string}
-                            : r
-                        )
-                      );
-                    };
-                    reader.readAsDataURL(file);
-                  }}
-                  onShowImages={() => showImages(routine)}
-                  onFileUpload={handleFileUpload}
-                  onFileDelete={handleFileDelete}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
+            <SortableContext
+              items={routines.map(r => r.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-4">
+                {routines.map((routine: Routine) => (
+                  <SortableRoutine
+                    key={routine.id}
+                    routine={routine}
+                    onToggle={toggleRoutine}
+                    onDelete={deleteRoutine}
+                    onImageUpload={(id, type, file) => {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setRoutines(prevRoutines =>
+                          prevRoutines.map(r =>
+                            r.id === id
+                              ? {...r, [type === 'before' ? 'beforeImage' : 'afterImage']: reader.result as string}
+                              : r
+                          )
+                        );
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                    onShowImages={() => showImages(routine)}
+                    onFileUpload={handleFileUpload}
+                    onFileDelete={handleFileDelete}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        )}
       </div>
 
       {/* 플로팅 버튼 */}
