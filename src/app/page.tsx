@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FaCamera, FaImage, FaHistory, FaTimes } from 'react-icons/fa';
+import { FaCamera, FaImage, FaHistory, FaTimes, FaPlus } from 'react-icons/fa';
 import Link from 'next/link';
 
 interface Routine {
@@ -327,39 +327,96 @@ export default function Home() {
     );
   };
 
+  const [statistics, setStatistics] = useState({
+    weekly: 0,
+    monthly: 0
+  });
+
+  useEffect(() => {
+    // 주간/월간 통계 계산
+    const now = new Date();
+    const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const weeklyCompleted = routines.filter(r => 
+      new Date(r.createdAt) >= weekStart && r.completed
+    ).length;
+    
+    const monthlyCompleted = routines.filter(r => 
+      new Date(r.createdAt) >= monthStart && r.completed
+    ).length;
+
+    setStatistics({
+      weekly: Math.round((weeklyCompleted / routines.length) * 100) || 0,
+      monthly: Math.round((monthlyCompleted / routines.length) * 100) || 0
+    });
+  }, [routines]);
+
   return (
-    <div className="min-h-screen p-8 bg-gray-900 text-gray-100">
+    <div className="min-h-screen p-8 bg-background text-foreground">
       {mounted && (
         <div className="text-center mb-4">
-          <div className="text-lg font-semibold text-gray-300">{dateString} ({dayString})</div>
-          <div className="text-2xl font-bold text-white">{timeString}</div>
+          <div className="text-lg font-semibold text-secondary">{dateString} ({dayString})</div>
+          <div className="text-2xl font-bold text-primary">{timeString}</div>
         </div>
       )}
 
       {/* 오늘의 진행률 + D+N 카운터 */}
-      <div className="bg-gray-800 p-6 rounded-xl shadow-lg mb-8 border border-gray-700">
+      <div className="card p-6 rounded-xl shadow-lg mb-8 border">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold flex items-center gap-2 text-white">
-            오늘의 진행률
-            <span className="text-base text-blue-400 font-bold">{getDaysCount()}</span>
-          </h2>
-          <Link href="/history" className="flex items-center text-blue-400 hover:text-blue-300">
+          <div className="flex items-center gap-4">
+            <h2 className="text-xl font-semibold text-primary">
+              오늘의 루틴 완료율: {calculateProgress()}%
+            </h2>
+            <span className="text-base text-primary font-bold">{getDaysCount()}</span>
+          </div>
+          <Link href="/history" className="flex items-center text-primary hover:text-primary-hover">
             <FaHistory className="mr-2" />
             과거 일정 보기
           </Link>
         </div>
-        <div className="w-full bg-gray-700 rounded-full h-4">
-          <div
-            className="bg-blue-500 h-4 rounded-full transition-all duration-300"
-            style={{ width: `${calculateProgress()}%` }}
-          ></div>
+        {/* 원형 프로그레스 바 */}
+        <div className="relative w-32 h-32 mx-auto mb-4">
+          <svg className="w-full h-full" viewBox="0 0 36 36">
+            <path
+              d="M18 2.0845
+                a 15.9155 15.9155 0 0 1 0 31.831
+                a 15.9155 15.9155 0 0 1 0 -31.831"
+              fill="none"
+              stroke="#2d3748"
+              strokeWidth="3"
+            />
+            <path
+              d="M18 2.0845
+                a 15.9155 15.9155 0 0 1 0 31.831
+                a 15.9155 15.9155 0 0 1 0 -31.831"
+              fill="none"
+              stroke={calculateProgress() > 70 ? "#48bb78" : calculateProgress() > 30 ? "#ecc94b" : "#f56565"}
+              strokeWidth="3"
+              strokeDasharray={`${calculateProgress()}, 100`}
+            />
+          </svg>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+            <span className="text-2xl font-bold">{calculateProgress()}%</span>
+          </div>
         </div>
-        <p className="text-center mt-2 text-gray-300">{calculateProgress()}% 완료</p>
+
+        {/* 통계 표시 */}
+        <div className="grid grid-cols-2 gap-4 mt-4">
+          <div className="bg-gray-700 p-4 rounded-lg">
+            <h3 className="text-sm text-gray-400">주간 완료율</h3>
+            <p className="text-xl font-bold">{statistics.weekly}%</p>
+          </div>
+          <div className="bg-gray-700 p-4 rounded-lg">
+            <h3 className="text-sm text-gray-400">월간 완료율</h3>
+            <p className="text-xl font-bold">{statistics.monthly}%</p>
+          </div>
+        </div>
       </div>
 
       {/* 오늘의 일과 */}
-      <div className="bg-gray-800 p-6 rounded-xl shadow-lg mb-8 border border-gray-700">
-        <h2 className="text-xl font-semibold mb-4 text-white">오늘의 일과</h2>
+      <div className="card p-6 rounded-xl shadow-lg mb-8 border">
+        <h2 className="text-xl font-semibold mb-4 text-primary">오늘의 일과</h2>
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -399,34 +456,44 @@ export default function Home() {
         </DndContext>
       </div>
 
+      {/* 플로팅 버튼 */}
+      <div className="fixed bottom-8 right-8">
+        <button
+          onClick={() => document.getElementById('newRoutineForm')?.scrollIntoView({ behavior: 'smooth' })}
+          className="bg-primary text-white p-4 rounded-full shadow-lg hover:bg-primary-hover transition-colors duration-200"
+        >
+          <FaPlus className="text-xl" />
+        </button>
+      </div>
+
       {/* 새로운 일과 추가하기 */}
-      <div className="bg-gray-800 p-6 rounded-xl shadow-lg mb-8 border border-gray-700">
-        <h2 className="text-xl font-semibold mb-4 text-white">새로운 일과 추가하기</h2>
+      <div id="newRoutineForm" className="card p-6 rounded-xl shadow-lg mb-8 border">
+        <h2 className="text-xl font-semibold mb-4 text-primary">새로운 일과 추가하기</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <input
             type="time"
             value={newRoutine.time || ''}
             onChange={(e) => setNewRoutine({...newRoutine, time: e.target.value})}
-            className="border border-gray-600 bg-gray-700 text-white p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="border border-card-border bg-card-bg text-primary p-2 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
           />
           <input
             type="text"
             value={newRoutine.title || ''}
             onChange={(e) => setNewRoutine({...newRoutine, title: e.target.value})}
-            className="border border-gray-600 bg-gray-700 text-white p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="border border-card-border bg-card-bg text-primary p-2 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
             placeholder="일과 제목"
           />
           <input
             type="color"
             value={newRoutine.color || '#000000'}
             onChange={(e) => setNewRoutine({...newRoutine, color: e.target.value})}
-            className="border border-gray-600 bg-gray-700 p-2 rounded-lg h-10"
+            className="border border-card-border bg-card-bg p-2 rounded-lg h-10"
           />
           <input
             type="text"
             value={newRoutine.message || ''}
             onChange={(e) => setNewRoutine({...newRoutine, message: e.target.value})}
-            className="border border-gray-600 bg-gray-700 text-white p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="border border-card-border bg-card-bg text-primary p-2 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
             placeholder="응원 메시지"
           />
           <div className="flex items-center col-span-2 mt-2">
@@ -435,12 +502,16 @@ export default function Home() {
               id="newRoutineNotification"
               checked={!!newRoutine.notification}
               onChange={e => setNewRoutine({...newRoutine, notification: e.target.checked})}
-              className="mr-2 w-5 h-5 rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+              className="mr-2 w-5 h-5 rounded border-card-border bg-card-bg text-primary focus:ring-primary"
             />
-            <label htmlFor="newRoutineNotification" className="text-gray-300">알람(알림) 설정</label>
+            <label htmlFor="newRoutineNotification" className="text-secondary">
+              지정 시간에 푸시 알림 받기
+            </label>
           </div>
           <div className="col-span-2">
-            <label className="block mb-2 text-gray-300">반복 요일</label>
+            <label className="block mb-2 text-secondary">
+              이 일과를 반복할 요일을 선택하세요
+            </label>
             <div className="flex gap-2">
               {['월', '화', '수', '목', '금', '토', '일'].map((day) => (
                 <button
@@ -453,8 +524,8 @@ export default function Home() {
                   }}
                   className={`p-2 rounded-lg transition-colors duration-200 ${
                     newRoutine.repeat.includes(day)
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      ? 'bg-primary text-white'
+                      : 'bg-card-bg text-secondary hover:bg-card-border'
                   }`}
                 >
                   {day}
@@ -465,7 +536,7 @@ export default function Home() {
         </div>
         <button
           onClick={addRoutine}
-          className="mt-4 bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 font-semibold"
+          className="mt-4 bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-hover transition-colors duration-200 font-semibold"
         >
           일과 추가하기
         </button>
