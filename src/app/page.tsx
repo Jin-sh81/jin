@@ -6,6 +6,7 @@ import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } 
 import { CSS } from '@dnd-kit/utilities';
 import { FaCamera, FaImage, FaHistory, FaTimes, FaPlus } from 'react-icons/fa';
 import Link from 'next/link';
+import NotificationPopup from '@/components/NotificationPopup';
 
 interface Routine {
   id: string;
@@ -292,7 +293,12 @@ export default function Home() {
     }
   }, []);
 
-  // 알림 설정
+  // 알림 체크 로직 수정
+  const [notification, setNotification] = useState<{
+    show: boolean;
+    routine: Routine | null;
+  }>({ show: false, routine: null });
+
   useEffect(() => {
     const checkAlarms = () => {
       const now = new Date();
@@ -307,13 +313,8 @@ export default function Home() {
             });
           }
 
-          // 브라우저 알림
-          if (Notification.permission === 'granted') {
-            new Notification('루틴 알림', {
-              body: `${routine.title} - ${routine.message || '할 시간이에요!'}`,
-              icon: '/icon.png'
-            });
-          }
+          // 팝업 알림 표시
+          setNotification({ show: true, routine });
         }
       });
     };
@@ -383,6 +384,14 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background text-primary">
+      {/* 알림 팝업 */}
+      {notification.show && notification.routine && (
+        <NotificationPopup
+          routine={notification.routine}
+          onClose={() => setNotification({ show: false, routine: null })}
+        />
+      )}
+
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-between items-center mb-8">
@@ -393,15 +402,19 @@ export default function Home() {
                 <span className="ml-2">{getDaysCount()}</span>
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-lg font-semibold mb-1">진행률</div>
-              <div className="text-2xl font-bold text-primary">{calculateProgress()}%</div>
+            <div className="flex items-center gap-4">
+              <Link
+                href="/today"
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors duration-200"
+              >
+                오늘의 일과
+              </Link>
             </div>
           </div>
 
           {/* 루틴 추가 폼 */}
           <div className="bg-card-bg border border-card-border rounded-lg p-6 mb-8">
-            <h2 className="text-xl font-semibold mb-4">새로운 일과 추가하기</h2>
+            <h2 className="text-xl font-semibold mb-4">새로운 루틴 추가하기</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-4">
                 <div>
@@ -499,34 +512,42 @@ export default function Home() {
           </div>
 
           {/* 루틴 목록 */}
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={routines.map(r => r.id)} strategy={verticalListSortingStrategy}>
-              {routines.map(routine => (
-                <SortableRoutine
-                  key={routine.id}
-                  routine={routine}
-                  onToggle={toggleRoutine}
-                  onDelete={deleteRoutine}
-                  onImageUpload={(id, type, file) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                      setRoutines(prevRoutines =>
-                        prevRoutines.map(r =>
-                          r.id === id
-                            ? {...r, [type === 'before' ? 'beforeImage' : 'afterImage']: reader.result as string}
-                            : r
-                        )
-                      );
-                    };
-                    reader.readAsDataURL(file);
-                  }}
-                  onShowImages={() => showImages(routine)}
-                  onFileUpload={handleFileUpload}
-                  onFileDelete={handleFileDelete}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
+          <div className="space-y-4">
+            {routines.length === 0 ? (
+              <div className="text-center py-8 text-secondary">
+                아직 추가된 루틴이 없습니다. 새로운 루틴을 추가해보세요!
+              </div>
+            ) : (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={routines.map(r => r.id)} strategy={verticalListSortingStrategy}>
+                  {routines.map(routine => (
+                    <SortableRoutine
+                      key={routine.id}
+                      routine={routine}
+                      onToggle={toggleRoutine}
+                      onDelete={deleteRoutine}
+                      onImageUpload={(id, type, file) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setRoutines(prevRoutines =>
+                            prevRoutines.map(r =>
+                              r.id === id
+                                ? {...r, [type === 'before' ? 'beforeImage' : 'afterImage']: reader.result as string}
+                                : r
+                            )
+                          );
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                      onShowImages={() => showImages(routine)}
+                      onFileUpload={handleFileUpload}
+                      onFileDelete={handleFileDelete}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
+            )}
+          </div>
         </div>
       </div>
     </div>
