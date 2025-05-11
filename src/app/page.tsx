@@ -382,247 +382,153 @@ export default function Home() {
   }, [routines]);
 
   return (
-    <div className="min-h-screen p-8 bg-background text-foreground">
-      {mounted && (
-        <div className="text-center mb-4">
-          <div className="text-lg font-semibold text-secondary">{dateString} ({dayString})</div>
-          <div className="text-2xl font-bold text-primary">{timeString}</div>
-        </div>
-      )}
-
-      {/* 오늘의 진행률 + D+N 카운터 */}
-      <div className="card p-6 rounded-xl shadow-lg mb-8 border">
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-4">
-            <h2 className="text-xl font-semibold text-primary">
-              오늘의 루틴 완료율: {calculateProgress()}%
-            </h2>
-            <span className="text-base text-primary font-bold">{getDaysCount()}</span>
-          </div>
-          <Link href="/history" className="flex items-center text-primary hover:text-primary-hover">
-            <FaHistory className="mr-2" />
-            과거 일정 보기
-          </Link>
-        </div>
-        {/* 원형 프로그레스 바 */}
-        <div className="relative w-32 h-32 mx-auto mb-4">
-          <svg className="w-full h-full" viewBox="0 0 36 36">
-            <path
-              d="M18 2.0845
-                a 15.9155 15.9155 0 0 1 0 31.831
-                a 15.9155 15.9155 0 0 1 0 -31.831"
-              fill="none"
-              stroke="#2d3748"
-              strokeWidth="3"
-            />
-            <path
-              d="M18 2.0845
-                a 15.9155 15.9155 0 0 1 0 31.831
-                a 15.9155 15.9155 0 0 1 0 -31.831"
-              fill="none"
-              stroke={calculateProgress() > 70 ? "#48bb78" : calculateProgress() > 30 ? "#ecc94b" : "#f56565"}
-              strokeWidth="3"
-              strokeDasharray={`${calculateProgress()}, 100`}
-            />
-          </svg>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
-            <span className="text-2xl font-bold">{calculateProgress()}%</span>
-          </div>
-        </div>
-
-        {/* 통계 표시 */}
-        <div className="grid grid-cols-2 gap-4 mt-4">
-          <div className="bg-gray-700 p-4 rounded-lg">
-            <h3 className="text-sm text-gray-400">주간 완료율</h3>
-            <p className="text-xl font-bold">{statistics.weekly}%</p>
-          </div>
-          <div className="bg-gray-700 p-4 rounded-lg">
-            <h3 className="text-sm text-gray-400">월간 완료율</h3>
-            <p className="text-xl font-bold">{statistics.monthly}%</p>
-          </div>
-        </div>
-      </div>
-
-      {/* 오늘의 일과 */}
-      <div className="card p-6 rounded-xl shadow-lg mb-8 border">
-        <h2 className="text-xl font-semibold mb-4 text-primary">오늘의 일과</h2>
-        {routines.length === 0 ? (
-          <div className="text-center py-8 text-secondary">
-            아직 추가된 일과가 없습니다. 새로운 일과를 추가해보세요!
-          </div>
-        ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={routines.map(r => r.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="space-y-4">
-                {routines.map((routine: Routine) => (
-                  <SortableRoutine
-                    key={routine.id}
-                    routine={routine}
-                    onToggle={toggleRoutine}
-                    onDelete={deleteRoutine}
-                    onImageUpload={(id, type, file) => {
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                        setRoutines(prevRoutines =>
-                          prevRoutines.map(r =>
-                            r.id === id
-                              ? {...r, [type === 'before' ? 'beforeImage' : 'afterImage']: reader.result as string}
-                              : r
-                          )
-                        );
-                      };
-                      reader.readAsDataURL(file);
-                    }}
-                    onShowImages={() => showImages(routine)}
-                    onFileUpload={handleFileUpload}
-                    onFileDelete={handleFileDelete}
-                  />
-                ))}
+    <div className="min-h-screen bg-background text-primary">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-2xl font-bold mb-2">나의 루틴</h1>
+              <div className="text-sm text-secondary">
+                {dateString} ({dayString}) {timeString}
+                <span className="ml-2">{getDaysCount()}</span>
               </div>
+            </div>
+            <div className="text-right">
+              <div className="text-lg font-semibold mb-1">진행률</div>
+              <div className="text-2xl font-bold text-primary">{calculateProgress()}%</div>
+            </div>
+          </div>
+
+          {/* 루틴 추가 폼 */}
+          <div className="bg-card-bg border border-card-border rounded-lg p-6 mb-8">
+            <h2 className="text-xl font-semibold mb-4">새로운 일과 추가하기</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-secondary mb-1">시간</label>
+                  <input
+                    type="time"
+                    value={newRoutine.time}
+                    onChange={e => setNewRoutine(prev => ({ ...prev, time: e.target.value }))}
+                    className="w-full p-2 rounded-lg border border-card-border bg-card-bg text-primary focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-secondary mb-1">일과 제목</label>
+                  <input
+                    type="text"
+                    value={newRoutine.title}
+                    onChange={e => setNewRoutine(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="일과 제목을 입력하세요"
+                    className="w-full p-2 rounded-lg border border-card-border bg-card-bg text-primary focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-secondary mb-1">색상</label>
+                  <input
+                    type="color"
+                    value={newRoutine.color}
+                    onChange={e => setNewRoutine(prev => ({ ...prev, color: e.target.value }))}
+                    className="w-full h-10 rounded-lg border border-card-border bg-card-bg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-secondary mb-1">응원 메시지</label>
+                  <input
+                    type="text"
+                    value={newRoutine.message}
+                    onChange={e => setNewRoutine(prev => ({ ...prev, message: e.target.value }))}
+                    placeholder="응원 메시지를 입력하세요"
+                    className="w-full p-2 rounded-lg border border-card-border bg-card-bg text-primary focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-4">
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="notification"
+                  checked={newRoutine.notification}
+                  onChange={e => setNewRoutine(prev => ({ ...prev, notification: e.target.checked }))}
+                  className="w-4 h-4 rounded border-card-border bg-card-bg text-primary focus:ring-primary"
+                />
+                <label htmlFor="notification" className="ml-2 text-sm text-secondary">
+                  푸시 알림 설정
+                </label>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-secondary mb-2">반복 요일</label>
+                <div className="flex flex-wrap gap-2">
+                  {days.map(day => (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => {
+                        setNewRoutine(prev => ({
+                          ...prev,
+                          repeat: prev.repeat.includes(day)
+                            ? prev.repeat.filter(d => d !== day)
+                            : [...prev.repeat, day]
+                        }));
+                      }}
+                      className={`px-3 py-1 rounded-full text-sm ${
+                        newRoutine.repeat.includes(day)
+                          ? 'bg-primary text-white'
+                          : 'bg-card-bg text-secondary hover:bg-card-border'
+                      }`}
+                    >
+                      {day}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={addRoutine}
+                className="w-full py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors duration-200"
+              >
+                일과 추가하기
+              </button>
+            </div>
+          </div>
+
+          {/* 루틴 목록 */}
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={routines.map(r => r.id)} strategy={verticalListSortingStrategy}>
+              {routines.map(routine => (
+                <SortableRoutine
+                  key={routine.id}
+                  routine={routine}
+                  onToggle={toggleRoutine}
+                  onDelete={deleteRoutine}
+                  onImageUpload={(id, type, file) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      setRoutines(prevRoutines =>
+                        prevRoutines.map(r =>
+                          r.id === id
+                            ? {...r, [type === 'before' ? 'beforeImage' : 'afterImage']: reader.result as string}
+                            : r
+                        )
+                      );
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                  onShowImages={() => showImages(routine)}
+                  onFileUpload={handleFileUpload}
+                  onFileDelete={handleFileDelete}
+                />
+              ))}
             </SortableContext>
           </DndContext>
-        )}
-      </div>
-
-      {/* 플로팅 버튼 */}
-      <div className="fixed bottom-8 right-8">
-        <button
-          onClick={() => document.getElementById('newRoutineForm')?.scrollIntoView({ behavior: 'smooth' })}
-          className="bg-primary text-white p-4 rounded-full shadow-lg hover:bg-primary-hover transition-colors duration-200"
-        >
-          <FaPlus className="text-xl" />
-        </button>
-      </div>
-
-      {/* 새로운 일과 추가하기 */}
-      <div id="newRoutineForm" className="card p-6 rounded-xl shadow-lg mb-8 border">
-        <h2 className="text-xl font-semibold mb-4 text-primary">새로운 일과 추가하기</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input
-            type="time"
-            value={newRoutine.time || ''}
-            onChange={(e) => setNewRoutine({...newRoutine, time: e.target.value})}
-            className="border border-card-border bg-card-bg text-primary p-2 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-          />
-          <input
-            type="text"
-            value={newRoutine.title || ''}
-            onChange={(e) => setNewRoutine({...newRoutine, title: e.target.value})}
-            className="border border-card-border bg-card-bg text-primary p-2 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-            placeholder="일과 제목"
-          />
-          <input
-            type="color"
-            value={newRoutine.color || '#000000'}
-            onChange={(e) => setNewRoutine({...newRoutine, color: e.target.value})}
-            className="border border-card-border bg-card-bg p-2 rounded-lg h-10"
-          />
-          <input
-            type="text"
-            value={newRoutine.message || ''}
-            onChange={(e) => setNewRoutine({...newRoutine, message: e.target.value})}
-            className="border border-card-border bg-card-bg text-primary p-2 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-            placeholder="응원 메시지"
-          />
-          <div className="flex items-center col-span-2 mt-2">
-            <input
-              type="checkbox"
-              id="newRoutineNotification"
-              checked={!!newRoutine.notification}
-              onChange={e => setNewRoutine({...newRoutine, notification: e.target.checked})}
-              className="mr-2 w-5 h-5 rounded border-card-border bg-card-bg text-primary focus:ring-primary"
-            />
-            <label htmlFor="newRoutineNotification" className="text-secondary">
-              지정 시간에 푸시 알림 받기
-            </label>
-          </div>
-          <div className="col-span-2">
-            <label className="block mb-2 text-secondary">
-              이 일과를 반복할 요일을 선택하세요
-            </label>
-            <div className="flex gap-2">
-              {['월', '화', '수', '목', '금', '토', '일'].map((day) => (
-                <button
-                  key={day}
-                  onClick={() => {
-                    const newRepeat = newRoutine.repeat.includes(day)
-                      ? newRoutine.repeat.filter(d => d !== day)
-                      : [...newRoutine.repeat, day];
-                    setNewRoutine({...newRoutine, repeat: newRepeat});
-                  }}
-                  className={`p-2 rounded-lg transition-colors duration-200 ${
-                    newRoutine.repeat.includes(day)
-                      ? 'bg-primary text-white'
-                      : 'bg-card-bg text-secondary hover:bg-card-border'
-                  }`}
-                >
-                  {day}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
-        <button
-          onClick={addRoutine}
-          className="mt-4 bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-hover transition-colors duration-200 font-semibold"
-        >
-          일과 추가하기
-        </button>
       </div>
-
-      {/* 이미지 모달 */}
-      {showImageModal.show && showImageModal.routine && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-gray-800 p-6 rounded-xl max-w-2xl w-full">
-            <h3 className="text-xl font-semibold mb-4 text-white">
-              {showImageModal.routine.title} - 사진 기록
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <h4 className="text-lg mb-2 text-gray-300">Before</h4>
-                {showImageModal.routine.beforeImage ? (
-                  <img 
-                    src={showImageModal.routine.beforeImage} 
-                    alt="Before" 
-                    className="w-full rounded-lg"
-                  />
-                ) : (
-                  <div className="bg-gray-700 rounded-lg p-4 text-center text-gray-400">
-                    Before 이미지 없음
-                  </div>
-                )}
-              </div>
-              <div>
-                <h4 className="text-lg mb-2 text-gray-300">After</h4>
-                {showImageModal.routine.afterImage ? (
-                  <img 
-                    src={showImageModal.routine.afterImage} 
-                    alt="After" 
-                    className="w-full rounded-lg"
-                  />
-                ) : (
-                  <div className="bg-gray-700 rounded-lg p-4 text-center text-gray-400">
-                    After 이미지 없음
-                  </div>
-                )}
-              </div>
-            </div>
-            <button
-              onClick={() => setShowImageModal({ show: false, routine: null })}
-              className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
-            >
-              닫기
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
