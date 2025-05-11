@@ -1,15 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  --background: #f5f5dc;  /* 베이지색 (눈 보호 색상) */
   --foreground: #171717;
-  --card-bg: #f3f4f6;
+  --card-bg: #ffffff;
   --card-border: #e5e7eb;
   --primary: #3b82f6;
   --primary-hover: #2563eb;
   --text-primary: #171717;
   --text-secondary: #4b5563;
   --text-tertiary: #9ca3af;
+  --progress-success: #48bb78;
+  --progress-warning: #ecc94b;
+  --progress-danger: #f56565;
 }
 
 @theme inline {
@@ -19,9 +22,26 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* 다크모드 클래스 */
+.dark {
+  --background: #2c2c1f;  /* 어두운 베이지색 (다크모드 눈 보호) */
+  --foreground: #ededed;
+  --card-bg: #1f2937;
+  --card-border: #374151;
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --text-primary: #ffffff;
+  --text-secondary: #d1d5db;
+  --text-tertiary: #9ca3af;
+  --progress-success: #48bb78;
+  --progress-warning: #ecc94b;
+  --progress-danger: #f56565;
+}
+
+/* 시스템 다크모드 설정 */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
+  :root:not(.light) {
+    --background: #2c2c1f;  /* 어두운 베이지색 (다크모드 눈 보호) */
     --foreground: #ededed;
     --card-bg: #1f2937;
     --card-border: #374151;
@@ -30,6 +50,9 @@
     --text-primary: #ffffff;
     --text-secondary: #d1d5db;
     --text-tertiary: #9ca3af;
+    --progress-success: #48bb78;
+    --progress-warning: #ecc94b;
+    --progress-danger: #f56565;
   }
 }
 
@@ -62,4 +85,9 @@ body {
 
 .bg-primary-hover:hover {
   background-color: var(--primary-hover);
+}
+
+/* 다크모드 전환 애니메이션 */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }

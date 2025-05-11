@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FaCamera, FaImage, FaHistory, FaTimes, FaPlus } from 'react-icons/fa';
+import { FaCamera, FaImage, FaHistory, FaTimes, FaPlus, FaPalette, FaMoon, FaSun } from 'react-icons/fa';
 import Link from 'next/link';
 import NotificationPopup from '@/components/NotificationPopup';
 
@@ -170,13 +170,15 @@ export default function Home() {
   }, [routines]);
 
   // 날짜, 요일, 시간 표시용 상태
-  const [now, setNow] = useState(new Date());
   const [mounted, setMounted] = useState(false);
+  const [now, setNow] = useState(new Date());
+
   useEffect(() => {
     setMounted(true);
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
   const days = ['일', '월', '화', '수', '목', '금', '토'];
   const dateString = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const dayString = days[now.getDay()];
@@ -359,11 +361,13 @@ export default function Home() {
 
   const [statistics, setStatistics] = useState({
     weekly: 0,
-    monthly: 0
+    monthly: 0,
+    total: 0,
+    streak: 0
   });
 
+  // 통계 계산
   useEffect(() => {
-    // 주간/월간 통계 계산
     const now = new Date();
     const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -376,14 +380,108 @@ export default function Home() {
       new Date(r.createdAt) >= monthStart && r.completed
     ).length;
 
+    const totalCompleted = routines.filter(r => r.completed).length;
+
+    // 연속 달성 일수 계산
+    let streak = 0;
+    const today = new Date();
+    for (let i = 0; i < 30; i++) {
+      const checkDate = new Date(today);
+      checkDate.setDate(today.getDate() - i);
+      const dateStr = checkDate.toISOString().slice(0, 10);
+      
+      const dayRoutines = routines.filter(r => 
+        r.repeat.includes(days[checkDate.getDay()])
+      );
+      
+      if (dayRoutines.length === 0) continue;
+      
+      const allCompleted = dayRoutines.every(r => r.completed);
+      if (allCompleted) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+
     setStatistics({
       weekly: Math.round((weeklyCompleted / routines.length) * 100) || 0,
-      monthly: Math.round((monthlyCompleted / routines.length) * 100) || 0
+      monthly: Math.round((monthlyCompleted / routines.length) * 100) || 0,
+      total: Math.round((totalCompleted / routines.length) * 100) || 0,
+      streak
     });
   }, [routines]);
 
+  const [backgroundImage, setBackgroundImage] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('backgroundImage') || '';
+    }
+    return '';
+  });
+
+  // 배경화면 저장
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('backgroundImage', backgroundImage);
+    }
+  }, [backgroundImage]);
+
+  // 배경화면 변경 핸들러
+  const handleBackgroundChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBackgroundImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const [goals, setGoals] = useState<{ projects: string; objectives: string }>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('goals');
+      return saved ? JSON.parse(saved) : { projects: '', objectives: '' };
+    }
+    return { projects: '', objectives: '' };
+  });
+
+  // 목표 저장
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('goals', JSON.stringify(goals));
+    }
+  }, [goals]);
+
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('darkMode');
+      return saved ? JSON.parse(saved) : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+  });
+
+  // 다크모드 설정 저장
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
+      document.documentElement.classList.toggle('dark', isDarkMode);
+    }
+  }, [isDarkMode]);
+
   return (
-    <div className="min-h-screen bg-background text-primary">
+    <div 
+      className="min-h-screen bg-background text-primary relative"
+      style={{
+        backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
+      {/* 배경화면 오버레이 */}
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+
       {/* 알림 팝업 */}
       {notification.show && notification.routine && (
         <NotificationPopup
@@ -392,17 +490,67 @@ export default function Home() {
         />
       )}
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 relative z-10">
         <div className="max-w-4xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-2xl font-bold mb-2">나의 루틴</h1>
-              <div className="text-sm text-secondary">
-                {dateString} ({dayString}) {timeString}
-                <span className="ml-2">{getDaysCount()}</span>
+          <div className="flex justify-between items-start mb-8">
+            <div className="flex-1">
+              <div className="flex items-center gap-4 mb-2">
+                <h1 className="text-2xl font-bold">나의 루틴</h1>
+                <button
+                  onClick={() => {
+                    const projects = prompt('진행 중인 프로젝트를 입력하세요:', goals.projects);
+                    const objectives = prompt('이루고 싶은 목표를 입력하세요:', goals.objectives);
+                    if (projects !== null && objectives !== null) {
+                      setGoals({ projects, objectives });
+                    }
+                  }}
+                  className="p-2 rounded-lg bg-card-bg text-secondary hover:bg-card-border transition-colors duration-200"
+                >
+                  ✏️
+                </button>
               </div>
+              {(goals.projects || goals.objectives) && (
+                <div className="bg-card-bg/90 backdrop-blur-sm border border-card-border rounded-lg p-4 mb-2">
+                  {goals.projects && (
+                    <div className="mb-2">
+                      <span className="text-sm font-medium text-secondary">진행 중인 프로젝트:</span>
+                      <p className="text-primary">{goals.projects}</p>
+                    </div>
+                  )}
+                  {goals.objectives && (
+                    <div>
+                      <span className="text-sm font-medium text-secondary">이루고 싶은 목표:</span>
+                      <p className="text-primary">{goals.objectives}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              {mounted && (
+                <div className="text-sm text-secondary">
+                  {dateString} ({dayString}) {timeString}
+                  <span className="ml-2">{getDaysCount()}</span>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-4">
+              {/* 다크모드 전환 버튼 */}
+              <button
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className="p-2 rounded-lg bg-card-bg text-secondary hover:bg-card-border transition-colors duration-200"
+                aria-label={isDarkMode ? '라이트 모드로 전환' : '다크 모드로 전환'}
+              >
+                {isDarkMode ? <FaSun className="text-xl" /> : <FaMoon className="text-xl" />}
+              </button>
+              {/* 배경화면 변경 버튼 */}
+              <label className="p-2 rounded-lg bg-card-bg text-secondary hover:bg-card-border cursor-pointer transition-colors duration-200">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleBackgroundChange}
+                  className="hidden"
+                />
+                <FaPalette className="text-xl" />
+              </label>
               <Link
                 href="/today"
                 className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors duration-200"
@@ -412,8 +560,63 @@ export default function Home() {
             </div>
           </div>
 
+          {/* 통계 카드 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="bg-card-bg/90 backdrop-blur-sm border border-card-border rounded-lg p-4">
+              <h3 className="text-sm text-secondary mb-1">주간 완료율</h3>
+              <div className="text-2xl font-bold text-primary">{statistics.weekly}%</div>
+            </div>
+            <div className="bg-card-bg/90 backdrop-blur-sm border border-card-border rounded-lg p-4">
+              <h3 className="text-sm text-secondary mb-1">월간 완료율</h3>
+              <div className="text-2xl font-bold text-primary">{statistics.monthly}%</div>
+            </div>
+            <div className="bg-card-bg/90 backdrop-blur-sm border border-card-border rounded-lg p-4">
+              <h3 className="text-sm text-secondary mb-1">전체 완료율</h3>
+              <div className="text-2xl font-bold text-primary">{statistics.total}%</div>
+            </div>
+            <div className="bg-card-bg/90 backdrop-blur-sm border border-card-border rounded-lg p-4">
+              <h3 className="text-sm text-secondary mb-1">연속 달성</h3>
+              <div className="text-2xl font-bold text-primary">{statistics.streak}일</div>
+            </div>
+          </div>
+
+          {/* 진행률 원형 차트 */}
+          <div className="bg-card-bg/90 backdrop-blur-sm border border-card-border rounded-lg p-6 mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">오늘의 진행률</h2>
+              <Link href="/history" className="flex items-center text-primary hover:text-primary-hover">
+                <FaHistory className="mr-2" />
+                과거 일정 보기
+              </Link>
+            </div>
+            <div className="relative w-32 h-32 mx-auto mb-4">
+              <svg className="w-full h-full" viewBox="0 0 36 36">
+                <path
+                  d="M18 2.0845
+                    a 15.9155 15.9155 0 0 1 0 31.831
+                    a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="var(--card-border)"
+                  strokeWidth="3"
+                />
+                <path
+                  d="M18 2.0845
+                    a 15.9155 15.9155 0 0 1 0 31.831
+                    a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke={calculateProgress() > 70 ? "#48bb78" : calculateProgress() > 30 ? "#ecc94b" : "#f56565"}
+                  strokeWidth="3"
+                  strokeDasharray={`${calculateProgress()}, 100`}
+                />
+              </svg>
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+                <span className="text-2xl font-bold">{calculateProgress()}%</span>
+              </div>
+            </div>
+          </div>
+
           {/* 루틴 추가 폼 */}
-          <div className="bg-card-bg border border-card-border rounded-lg p-6 mb-8">
+          <div className="bg-card-bg/90 backdrop-blur-sm border border-card-border rounded-lg p-6 mb-8">
             <h2 className="text-xl font-semibold mb-4">새로운 루틴 추가하기</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-4">
