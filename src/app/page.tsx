@@ -153,8 +153,14 @@ export default function Home() {
 
   useEffect(() => {
     const initTranslation = async () => {
-      const { t } = await useTranslation('ko', 'common');
-      setT(t);
+      try {
+        const { t: translation } = await useTranslation('ko', 'common');
+        setT(translation);
+      } catch (error) {
+        console.error('Translation initialization failed:', error);
+        // 기본 번역 객체 제공
+        setT((key: string) => key);
+      }
     };
     initTranslation();
   }, []);
@@ -447,8 +453,12 @@ export default function Home() {
     }
   }, [goals, mounted]);
 
-  if (!t) {
-    return <div>Loading...</div>;
+  if (!mounted || !t) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
+        <div className="text-gray-600 dark:text-gray-300">Loading...</div>
+      </div>
+    );
   }
 
   return (
