@@ -1,0 +1,17 @@
+{
+  "appName": "My Routine",
+  "add": "Add",
+  "addRoutinePlaceholder": "Enter new routine",
+  "progress": "Progress",
+  "delete": "Delete",
+  "edit": "Edit",
+  "complete": "Complete",
+  "incomplete": "Incomplete",
+  "notification": "Notification",
+  "repeat": "Repeat",
+  "color": "Color",
+  "message": "Message",
+  "time": "Time",
+  "title": "Title",
+  "loading": "Loading..."
+} 

@@ -1,0 +1,17 @@
+{
+  "appName": "나의 루틴",
+  "add": "추가하기",
+  "addRoutinePlaceholder": "새로운 루틴을 입력하세요",
+  "progress": "진행률",
+  "delete": "삭제",
+  "edit": "수정",
+  "complete": "완료",
+  "incomplete": "미완료",
+  "notification": "알림",
+  "repeat": "반복",
+  "color": "색상",
+  "message": "메시지",
+  "time": "시간",
+  "title": "제목",
+  "loading": "로딩 중..."
+} 

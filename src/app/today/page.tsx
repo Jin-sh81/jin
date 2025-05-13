@@ -19,7 +19,7 @@ interface Routine {
 
 export default function Today() {
   const [routines, setRoutines] = useState<Routine[]>([]);
-  const [ setMounted] = useState(false);//mounted
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);

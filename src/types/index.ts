@@ -1,16 +1,21 @@
 export interface Routine {
   id: string;
+  name: string;
   time: string;
   title: string;
   color: string;
-  completed: boolean;
-  repeat: string[];
   message: string;
+  repeat: string[];
   notification: boolean;
+  completed: boolean;
   beforeImage?: string;
   afterImage?: string;
-  createdAt: string;
-  files?: { name: string; data: string }[];
+  files?: Array<{
+    name: string;
+    data: string;
+  }>;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface NewRoutine {
@@ -27,8 +32,8 @@ export interface User {
   name: string;
   email: string;
   preferences: {
-    darkMode: boolean;
-    notifications: boolean;
+    theme: 'light' | 'dark';
+    language: 'ko' | 'en';
   };
 }
 
@@ -36,11 +41,13 @@ export interface Statistics {
   totalRoutines: number;
   completedRoutines: number;
   streak: number;
-  lastCompleted: string;
+  lastCompleted: Date | null;
 }
 
 export interface Goals {
   daily: number;
   weekly: number;
   monthly: number;
+  currentStreak: number;
+  bestStreak: number;
 } 

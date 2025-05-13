@@ -43,7 +43,7 @@ const BackgroundLayout: React.FC<BackgroundLayoutProps> = ({ children }) => {
   const currentBackground = backgroundImages[pathname] || '';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-secondary/5 to-tertiary/10">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         {children}
       </div>
