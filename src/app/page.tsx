@@ -10,6 +10,7 @@ import Link from 'next/link';
 import BackgroundLayout from '@/components/BackgroundLayout';
 import { Routine, NewRoutine } from '@/types';
 import { useTranslation } from '@/i18n';
+import { useSession } from "next-auth/react";
 
 function SortableRoutine({ routine, onToggle, onDelete, onImageUpload, onShowImages, onFileUpload, onFileDelete }: {
   routine: Routine;
@@ -148,6 +149,7 @@ export default function Home() {
   const [notification, setNotification] = useState<{ show: boolean; routine: Routine | null }>({ show: false, routine: null });
   const [showImageModal, setShowImageModal] = useState<{ show: boolean; routine: Routine | null }>({ show: false, routine: null });
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { data: session, status } = useSession();
 
   const days = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -453,12 +455,12 @@ export default function Home() {
     }
   }, [goals, mounted]);
 
-  if (!mounted || !t) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
-        <div className="text-gray-600 dark:text-gray-300">Loading...</div>
-      </div>
-    );
+  if (status === "loading") {
+    return <div>Loading...</div>;
+  }
+  
+  if (!session) {
+    return <div>로그인이 필요합니다</div>;
   }
 
   return (
