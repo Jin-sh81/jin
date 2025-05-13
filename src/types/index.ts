@@ -37,11 +37,22 @@ export interface User {
   };
 }
 
+export interface WeeklyStat {
+  date: string;
+  total: number;
+  completed: number;
+  completionRate: number;
+}
+
 export interface Statistics {
   totalRoutines: number;
   completedRoutines: number;
-  streak: number;
-  lastCompleted: Date | null;
+  completionRate: number;
+  todayRoutines: number;
+  todayCompleted: number;
+  todayCompletionRate: number;
+  weeklyStats: WeeklyStat[];
+  repeatStats: Record<string, number>;
 }
 
 export interface Goals {
@@ -50,4 +61,12 @@ export interface Goals {
   monthly: number;
   currentStreak: number;
   bestStreak: number;
+}
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
 } 

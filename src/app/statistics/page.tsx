@@ -4,26 +4,10 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { FaArrowLeft } from 'react-icons/fa';
+import { SessionProvider } from "next-auth/react";
+import { Statistics, WeeklyStat } from '@/types';
 
-interface Statistics {
-  totalRoutines: number;
-  completedRoutines: number;
-  completionRate: number;
-  todayRoutines: number;
-  todayCompleted: number;
-  todayCompletionRate: number;
-  weeklyStats: {
-    date: string;
-    total: number;
-    completed: number;
-    completionRate: number;
-  }[];
-  repeatStats: Record<string, number>;
-}
-
-export const dynamic = 'force-dynamic';
-
-export default function StatisticsPage() {
+function StatisticsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [statistics, setStatistics] = useState<Statistics | null>(null);
@@ -55,13 +39,13 @@ export default function StatisticsPage() {
     }
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     const days = ['일', '월', '화', '수', '목', '금', '토'];
     return `${date.getMonth() + 1}월 ${date.getDate()}일 (${days[date.getDay()]})`;
   };
 
-  const formatDay = (day: string) => {
+  const formatDay = (day: string): string => {
     const dayMap: Record<string, string> = {
       'monday': '월요일',
       'tuesday': '화요일',
@@ -166,7 +150,7 @@ export default function StatisticsPage() {
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm mb-8">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">주간 통계</h2>
           <div className="space-y-4">
-            {statistics.weeklyStats.map((stat) => (
+            {statistics.weeklyStats.map((stat: WeeklyStat) => (
               <div key={stat.date} className="flex items-center justify-between">
                 <span className="text-gray-600 dark:text-gray-400">{formatDate(stat.date)}</span>
                 <div className="flex items-center gap-4">
@@ -194,5 +178,13 @@ export default function StatisticsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function StatisticsPageWithSession() {
+  return (
+    <SessionProvider>
+      <StatisticsPage />
+    </SessionProvider>
   );
 } 

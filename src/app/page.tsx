@@ -4,13 +4,15 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FaCamera, FaImage, FaHistory, FaTimes, FaMoon, FaSun } from 'react-icons/fa';//FaPlus, FaPalette,
+import { FaCamera, FaImage, FaHistory, FaTimes, FaMoon, FaSun, FaPlus, FaCheck, FaEdit, FaTrash, FaBell, FaRedo, FaArrowLeft } from 'react-icons/fa';//FaPlus, FaPalette,
 import Link from 'next/link';
 //import NotificationPopup from '@/components/NotificationPopup';
 import BackgroundLayout from '@/components/BackgroundLayout';
 import { Routine, NewRoutine } from '@/types';
 import { useTranslation } from '@/i18n';
 import { useSession } from "next-auth/react";
+import { SessionProvider } from "next-auth/react";
+import { useRouter } from 'next/navigation';
 
 function SortableRoutine({ routine, onToggle, onDelete, onImageUpload, onShowImages, onFileUpload, onFileDelete }: {
   routine: Routine;
@@ -150,6 +152,9 @@ export default function Home() {
   const [showImageModal, setShowImageModal] = useState<{ show: boolean; routine: Routine | null }>({ show: false, routine: null });
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { data: session, status } = useSession();
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const days = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -167,27 +172,62 @@ export default function Home() {
     initTranslation();
   }, []);
 
-  // localStorage 관련 로직을 useCallback으로 최적화
-  const loadRoutines = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('routines');
-      if (saved) setRoutines(JSON.parse(saved));
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    } else if (status === 'authenticated') {
+      fetchRoutines();
+    }
+  }, [status, router]);
+
+  const fetchRoutines = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch('/api/routines');
+      if (!response.ok) {
+        throw new Error('루틴을 불러오는데 실패했습니다.');
+      }
+      const data = await response.json();
+      setRoutines(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
     }
   }, []);
 
-  const saveRoutines = useCallback((updatedRoutines: Routine[]) => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('routines', JSON.stringify(updatedRoutines));
+  const handleComplete = useCallback(async (id: string) => {
+    try {
+      const response = await fetch(`/api/routines/${id}/complete`, {
+        method: 'PUT',
+      });
+      if (!response.ok) {
+        throw new Error('루틴 완료 처리에 실패했습니다.');
+      }
+      await fetchRoutines();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
     }
-  }, []);
+  }, [fetchRoutines]);
 
-  useEffect(() => {
-    loadRoutines();
-  }, [loadRoutines]);
+  const handleDelete = useCallback(async (id: string) => {
+    if (!window.confirm('정말로 이 루틴을 삭제하시겠습니까?')) {
+      return;
+    }
 
-  useEffect(() => {
-    saveRoutines(routines);
-  }, [routines, saveRoutines]);
+    try {
+      const response = await fetch(`/api/routines/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error('루틴 삭제에 실패했습니다.');
+      }
+      await fetchRoutines();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
+    }
+  }, [fetchRoutines]);
 
   // 날짜, 요일, 시간 표시용 상태
   useEffect(() => {
@@ -455,12 +495,48 @@ export default function Home() {
     }
   }, [goals, mounted]);
 
-  if (status === "loading") {
-    return <div>Loading...</div>;
+  if (status === "loading" || loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="animate-pulse space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-4 h-24" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
   
   if (!session) {
-    return <div>로그인이 필요합니다</div>;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-600 dark:text-red-400">
+            <p>로그인이 필요합니다.</p>
+            <button
+              onClick={() => router.push('/login')}
+              className="mt-4 text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+            >
+              로그인하기
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-600 dark:text-red-400">
+            {error}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -726,3 +802,14 @@ export default function Home() {
     </BackgroundLayout>
   );
 }
+
+// Wrap the page with SessionProvider
+function HomeWithSession() {
+  return (
+    <SessionProvider>
+      <Home />
+    </SessionProvider>
+  );
+}
+
+export default HomeWithSession;

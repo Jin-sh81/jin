@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { FaArrowLeft } from 'react-icons/fa';
+import { SessionProvider } from "next-auth/react";
 
 export const dynamic = 'force-dynamic';
 
-export default function ProfilePage() {
+function ProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [name, setName] = useState(session?.user?.name || '');
@@ -148,5 +149,13 @@ export default function ProfilePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ProfilePageWithSession() {
+  return (
+    <SessionProvider>
+      <ProfilePage />
+    </SessionProvider>
   );
 } 

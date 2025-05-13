@@ -4,10 +4,11 @@ import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { FaArrowLeft } from 'react-icons/fa';
+import { SessionProvider } from "next-auth/react";
 
 export const dynamic = 'force-dynamic';
 
-export default function PasswordSettingsPage() {
+function PasswordSettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [currentPassword, setCurrentPassword] = useState('');
@@ -127,5 +128,13 @@ export default function PasswordSettingsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PasswordSettingsPageWithSession() {
+  return (
+    <SessionProvider>
+      <PasswordSettingsPage />
+    </SessionProvider>
   );
 } 

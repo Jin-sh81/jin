@@ -1,21 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { FaArrowLeft, FaBell } from 'react-icons/fa';
-
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  read: boolean;
-  createdAt: string;
-}
+import { SessionProvider } from "next-auth/react";
+import { Notification } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
-export default function NotificationsPage() {
+function NotificationsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -30,7 +24,7 @@ export default function NotificationsPage() {
     }
   }, [status, router]);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -45,9 +39,9 @@ export default function NotificationsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleRead = async (id: string) => {
+  const handleRead = useCallback(async (id: string) => {
     try {
       await fetch(`/api/notifications/${id}/read`, { method: 'POST' });
       setNotifications((prev) =>
@@ -56,7 +50,7 @@ export default function NotificationsPage() {
     } catch (err) {
       // 에러 무시
     }
-  };
+  }, []);
 
   if (status === 'loading' || loading) {
     return (
@@ -137,5 +131,13 @@ export default function NotificationsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function NotificationsPageWithSession() {
+  return (
+    <SessionProvider>
+      <NotificationsPage />
+    </SessionProvider>
   );
 } 

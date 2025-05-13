@@ -1,29 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { FaPlus, FaCheck, FaEdit, FaTrash, FaBell, FaRedo, FaArrowLeft } from 'react-icons/fa';
-
-interface Routine {
-  id: string;
-  title: string;
-  time: string;
-  color: string;
-  message?: string;
-  completed: boolean;
-  repeat: string[];
-  notification: boolean;
-  beforeImage?: string;
-  afterImage?: string;
-  files: string[];
-  createdAt: string;
-  updatedAt: string;
-}
+import { SessionProvider } from "next-auth/react";
+import { Routine } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
-export default function RoutinesPage() {
+function RoutinesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [routines, setRoutines] = useState<Routine[]>([]);
@@ -38,7 +24,7 @@ export default function RoutinesPage() {
     }
   }, [status, router]);
 
-  const fetchRoutines = async () => {
+  const fetchRoutines = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -53,9 +39,9 @@ export default function RoutinesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleComplete = async (id: string) => {
+  const handleComplete = useCallback(async (id: string) => {
     try {
       const response = await fetch(`/api/routines/${id}/complete`, {
         method: 'PUT',
@@ -67,9 +53,9 @@ export default function RoutinesPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
     }
-  };
+  }, [fetchRoutines]);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     if (!window.confirm('정말로 이 루틴을 삭제하시겠습니까?')) {
       return;
     }
@@ -85,7 +71,7 @@ export default function RoutinesPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
     }
-  };
+  }, [fetchRoutines]);
 
   if (status === 'loading' || loading) {
     return (
@@ -227,5 +213,13 @@ export default function RoutinesPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function RoutinesPageWithSession() {
+  return (
+    <SessionProvider>
+      <RoutinesPage />
+    </SessionProvider>
   );
 } 
