@@ -4,9 +4,9 @@ import { useState, useEffect, useRef } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FaCamera, FaImage, FaHistory, FaTimes, FaPlus, FaPalette, FaMoon, FaSun } from 'react-icons/fa';
+import { FaCamera, FaImage, FaHistory, FaTimes,  FaMoon, FaSun } from 'react-icons/fa';//FaPlus, FaPalette,
 import Link from 'next/link';
-import NotificationPopup from '@/components/NotificationPopup';
+//import NotificationPopup from '@/components/NotificationPopup';
 import BackgroundLayout from '@/components/BackgroundLayout';
 
 interface Routine {
@@ -226,20 +226,20 @@ export default function Home() {
       return;
     }
 
-    const routine: Routine = {
-      id: Date.now().toString(),
-      time: newRoutine.time,
+      const routine: Routine = {
+        id: Date.now().toString(),
+        time: newRoutine.time,
       title: newRoutine.title.trim(),
-      color: newRoutine.color,
-      completed: false,
-      repeat: newRoutine.repeat,
+        color: newRoutine.color,
+        completed: false,
+        repeat: newRoutine.repeat,
       message: newRoutine.message.trim(),
-      notification: !!newRoutine.notification,
-      createdAt: new Date().toISOString()
-    };
+        notification: !!newRoutine.notification,
+        createdAt: new Date().toISOString()
+      };
 
-    setRoutines(prevRoutines => [...prevRoutines, routine]);
-    setNewRoutine({ time: '', title: '', color: '#000000', message: '', repeat: [], notification: false });
+      setRoutines(prevRoutines => [...prevRoutines, routine]);
+      setNewRoutine({ time: '', title: '', color: '#000000', message: '', repeat: [], notification: false });
   };
 
   // 드래그 앤 드롭
@@ -273,7 +273,7 @@ export default function Home() {
   };
 
   // 이미지 모달
-  const [showImageModal, setShowImageModal] = useState<{ show: boolean; routine: Routine | null }>({ show: false, routine: null });
+  //const [showImageModal, setShowImageModal] = useState<{ show: boolean; routine: Routine | null }>({ show: false, routine: null });
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // 알람 소리 설정
@@ -297,7 +297,7 @@ export default function Home() {
   }, []);
 
   // 알림 체크 로직 수정
-  const [notification, setNotification] = useState<{
+  //const [notification, setNotification] = useState<{
     show: boolean;
     routine: Routine | null;
   }>({ show: false, routine: null });
@@ -389,7 +389,7 @@ export default function Home() {
     for (let i = 0; i < 30; i++) {
       const checkDate = new Date(today);
       checkDate.setDate(today.getDate() - i);
-      const dateStr = checkDate.toISOString().slice(0, 10);
+      //const dateStr = checkDate.toISOString().slice(0, 10);
       
       const dayRoutines = routines.filter(r => 
         r.repeat.includes(days[checkDate.getDay()])
@@ -484,12 +484,12 @@ export default function Home() {
                   )}
                 </div>
               )}
-              {mounted && (
+      {mounted && (
                 <div className="text-sm text-secondary">
                   {dateString} ({dayString}) {timeString}
                   <span className="ml-2">{getDaysCount()}</span>
-                </div>
-              )}
+        </div>
+      )}
             </div>
             <div className="flex items-center gap-4">
               {mounted && (
@@ -534,13 +534,13 @@ export default function Home() {
 
           {/* 진행률 원형 차트 */}
           <div className="bg-card-bg/90 backdrop-blur-sm border border-card-border rounded-lg p-6 mb-8">
-            <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">오늘의 진행률</h2>
               <Link href="/history" className="flex items-center text-primary hover:text-primary-hover">
-                <FaHistory className="mr-2" />
-                과거 일정 보기
-              </Link>
-            </div>
+            <FaHistory className="mr-2" />
+            과거 일정 보기
+          </Link>
+        </div>
             <div className="relative w-32 h-32 mx-auto mb-4">
               <svg className="w-full h-full" viewBox="0 0 36 36">
                 <path
@@ -613,7 +613,7 @@ export default function Home() {
                   />
                 </div>
               </div>
-            </div>
+        </div>
 
             <div className="mt-4 space-y-4">
               <div className="flex items-center">
@@ -627,7 +627,7 @@ export default function Home() {
                 <label htmlFor="notification" className="ml-2 text-sm text-secondary">
                   푸시 알림 설정
                 </label>
-              </div>
+      </div>
 
               <div>
                 <label className="block text-sm font-medium text-secondary mb-2">반복 요일</label>
@@ -667,7 +667,7 @@ export default function Home() {
           </div>
 
           {/* 루틴 목록 */}
-          <div className="space-y-4">
+            <div className="space-y-4">
             {routines.length === 0 ? (
               <div className="text-center py-8 text-secondary">
                 아직 추가된 루틴이 없습니다. 새로운 루틴을 추가해보세요!
@@ -676,31 +676,31 @@ export default function Home() {
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={routines.map(r => r.id)} strategy={verticalListSortingStrategy}>
                   {routines.map(routine => (
-                    <SortableRoutine
-                      key={routine.id}
-                      routine={routine}
-                      onToggle={toggleRoutine}
-                      onDelete={deleteRoutine}
-                      onImageUpload={(id, type, file) => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          setRoutines(prevRoutines =>
-                            prevRoutines.map(r =>
-                              r.id === id
-                                ? {...r, [type === 'before' ? 'beforeImage' : 'afterImage']: reader.result as string}
-                                : r
-                            )
-                          );
-                        };
-                        reader.readAsDataURL(file);
-                      }}
-                      onShowImages={() => showImages(routine)}
-                      onFileUpload={handleFileUpload}
-                      onFileDelete={handleFileDelete}
-                    />
-                  ))}
-                </SortableContext>
-              </DndContext>
+                <SortableRoutine
+                  key={routine.id}
+                  routine={routine}
+                  onToggle={toggleRoutine}
+                  onDelete={deleteRoutine}
+                  onImageUpload={(id, type, file) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      setRoutines(prevRoutines =>
+                        prevRoutines.map(r =>
+                          r.id === id
+                            ? {...r, [type === 'before' ? 'beforeImage' : 'afterImage']: reader.result as string}
+                            : r
+                        )
+                      );
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                  onShowImages={() => showImages(routine)}
+                  onFileUpload={handleFileUpload}
+                  onFileDelete={handleFileDelete}
+                />
+              ))}
+          </SortableContext>
+        </DndContext>
             )}
           </div>
         </div>

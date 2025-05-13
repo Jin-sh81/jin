@@ -22,7 +22,7 @@ interface Routine {
 
 export default function History() {
   const [routines, setRoutines] = useState<Routine[]>([]);
-  const [mounted, setMounted] = useState(false);
+  //const [mounted, setMounted] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [selectedRoutine, setSelectedRoutine] = useState<Routine | null>(null);
 
@@ -96,7 +96,7 @@ export default function History() {
     acc[date].push(routine);
     return acc;
   }, {} as Record<string, Routine[]>);
-  const sortedDates = Object.keys(routinesByDate).sort((a, b) => b.localeCompare(a));
+  //const sortedDates = Object.keys(routinesByDate).sort((a, b) => b.localeCompare(a));
 
   return (
     <BackgroundLayout>
@@ -167,7 +167,7 @@ export default function History() {
                   <div>
                     <h4 className="text-lg mb-2 text-gray-300">Before</h4>
                     {selectedRoutine.beforeImage ? (
-                      <img 
+                      <image 
                         src={selectedRoutine.beforeImage} 
                         alt="Before" 
                         className="w-full rounded-lg"
@@ -181,7 +181,7 @@ export default function History() {
                   <div>
                     <h4 className="text-lg mb-2 text-gray-300">After</h4>
                     {selectedRoutine.afterImage ? (
-                      <img 
+                      <image 
                         src={selectedRoutine.afterImage} 
                         alt="After" 
                         className="w-full rounded-lg mb-2"
