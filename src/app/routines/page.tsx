@@ -10,78 +10,63 @@ interface Routine {
   title: string;
   time: string;
   color: string;
-  message: string;
+  message?: string;
+  completed: boolean;
   repeat: string[];
   notification: boolean;
-  completed: boolean;
-  beforeImage: string | null;
-  afterImage: string | null;
+  beforeImage?: string;
+  afterImage?: string;
+  files: string[];
 }
 
 export default function RoutinesPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [routines, setRoutines] = useState<Routine[]>([]);
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (session) {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    } else if (status === 'authenticated') {
       fetchRoutines();
     }
-  }, [session]);
+  }, [status, router]);
 
   const fetchRoutines = async () => {
     try {
+      setLoading(true);
+      setError(null);
       const response = await fetch('/api/routines');
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || '루틴을 불러오는데 실패했습니다.');
+        throw new Error('루틴을 불러오는데 실패했습니다.');
       }
-
+      const data = await response.json();
       setRoutines(data);
-    } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError('루틴을 불러오는데 실패했습니다.');
-      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   const handleComplete = async (id: string) => {
     try {
       const response = await fetch(`/api/routines/${id}/complete`, {
-        method: 'POST',
+        method: 'PUT',
       });
-
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || '루틴 완료 처리에 실패했습니다.');
+        throw new Error('루틴 완료 처리에 실패했습니다.');
       }
-
-      setRoutines(prev =>
-        prev.map(routine =>
-          routine.id === id
-            ? { ...routine, completed: !routine.completed }
-            : routine
-        )
-      );
-    } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError('루틴 완료 처리에 실패했습니다.');
-      }
+      await fetchRoutines();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('정말로 이 루틴을 삭제하시겠습니까?')) {
+    if (!window.confirm('정말로 이 루틴을 삭제하시겠습니까?')) {
       return;
     }
 
@@ -89,36 +74,35 @@ export default function RoutinesPage() {
       const response = await fetch(`/api/routines/${id}`, {
         method: 'DELETE',
       });
-
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || '루틴 삭제에 실패했습니다.');
+        throw new Error('루틴 삭제에 실패했습니다.');
       }
-
-      setRoutines(prev => prev.filter(routine => routine.id !== id));
-    } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError('루틴 삭제에 실패했습니다.');
-      }
+      await fetchRoutines();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
     }
   };
 
-  if (!session) {
-    router.push('/login');
-    return null;
+  if (status === 'loading' || loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="animate-pulse space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-4 h-24" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  if (isLoading) {
+  if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 p-4">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-            <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
+          <div className="bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-600 dark:text-red-400">
+            {error}
           </div>
         </div>
       </div>
@@ -126,99 +110,90 @@ export default function RoutinesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 p-4">
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-          <div className="flex items-center justify-between mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">나의 루틴</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">내 루틴</h1>
+          <button
+            onClick={() => router.push('/routines/new')}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            <FaPlus />
+            <span>새 루틴</span>
+          </button>
+        </div>
+
+        {routines.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500 dark:text-gray-400">아직 루틴이 없습니다.</p>
             <button
               onClick={() => router.push('/routines/new')}
-              className="flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+              className="mt-4 text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
             >
-              <FaPlus className="mr-2" />
-              새 루틴
+              첫 루틴을 만들어보세요
             </button>
           </div>
-
-          {error && (
-            <div className="mb-4 p-3 text-sm text-red-500 bg-red-50 dark:bg-red-900/50 rounded-lg">
-              {error}
-            </div>
-          )}
-
-          {routines.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500 dark:text-gray-400">아직 루틴이 없습니다.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {routines.map((routine) => (
-                <div
-                  key={routine.id}
-                  className="flex items-center justify-between p-4 bg-white dark:bg-gray-700 rounded-lg shadow"
-                >
-                  <div className="flex items-center space-x-4">
-                    <div
-                      className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: routine.color }}
-                    />
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+        ) : (
+          <div className="space-y-4">
+            {routines.map((routine) => (
+              <div
+                key={routine.id}
+                className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                         {routine.title}
-                      </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {routine.time}
-                      </p>
-                      {routine.message && (
-                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                          {routine.message}
-                        </p>
+                      </h2>
+                      {routine.notification && (
+                        <FaBell className="text-yellow-500" title="알림 설정됨" />
                       )}
-                      <div className="mt-2 flex items-center space-x-2">
-                        {routine.notification && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                            <FaBell className="mr-1" />
-                            알림
-                          </span>
-                        )}
-                        {routine.repeat.length > 0 && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                            <FaRedo className="mr-1" />
-                            {routine.repeat.join(', ')}
-                          </span>
-                        )}
-                      </div>
+                      {routine.repeat.length > 0 && (
+                        <FaRedo className="text-blue-500" title="반복 설정됨" />
+                      )}
                     </div>
+                    <p className="text-gray-600 dark:text-gray-300 mt-1">
+                      {routine.time}
+                    </p>
+                    {routine.message && (
+                      <p className="text-gray-500 dark:text-gray-400 mt-2">
+                        {routine.message}
+                      </p>
+                    )}
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleComplete(routine.id)}
                       className={`p-2 rounded-full ${
                         routine.completed
-                          ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-200'
-                          : 'bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-300'
+                          ? 'bg-green-100 text-green-600 dark:bg-green-900/50 dark:text-green-400'
+                          : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
                       }`}
+                      title={routine.completed ? '완료됨' : '완료하기'}
                     >
                       <FaCheck />
                     </button>
                     <button
                       onClick={() => router.push(`/routines/${routine.id}/edit`)}
-                      className="p-2 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-200"
+                      className="p-2 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400"
+                      title="수정"
                     >
                       <FaEdit />
                     </button>
                     <button
                       onClick={() => handleDelete(routine.id)}
-                      className="p-2 rounded-full bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-200"
+                      className="p-2 rounded-full bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-400"
+                      title="삭제"
                     >
                       <FaTrash />
                     </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
