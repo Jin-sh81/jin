@@ -1,28 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FaCamera, FaImage, FaHistory, FaTimes,  FaMoon, FaSun } from 'react-icons/fa';//FaPlus, FaPalette,
+import { FaCamera, FaImage, FaHistory, FaTimes, FaMoon, FaSun } from 'react-icons/fa';//FaPlus, FaPalette,
 import Link from 'next/link';
 //import NotificationPopup from '@/components/NotificationPopup';
 import BackgroundLayout from '@/components/BackgroundLayout';
-
-interface Routine {
-  id: string;
-  time: string;
-  title: string;
-  color: string;
-  completed: boolean;
-  repeat: string[];
-  message: string;
-  notification: boolean;
-  beforeImage?: string;
-  afterImage?: string;
-  createdAt: string;
-  files?: { name: string; data: string }[];
-}
+import { Routine, NewRoutine } from '@/types';
 
 function SortableRoutine({ routine, onToggle, onDelete, onImageUpload, onShowImages, onFileUpload, onFileDelete }: {
   routine: Routine;
@@ -144,43 +130,54 @@ function SortableRoutine({ routine, onToggle, onDelete, onImageUpload, onShowIma
 }
 
 export default function Home() {
-  // 1. 초기값은 빈 배열
   const [routines, setRoutines] = useState<Routine[]>([]);
-  const [newRoutine, setNewRoutine] = useState({
+  const [newRoutine, setNewRoutine] = useState<NewRoutine>({
     time: '',
     title: '',
     color: '#000000',
     message: '',
-    repeat: [] as string[],
+    repeat: [],
     notification: false
   });
+  const [mounted, setMounted] = useState(false);
+  const [now, setNow] = useState(new Date());
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [goals, setGoals] = useState<{ projects: string; objectives: string }>({ projects: '', objectives: '' });
+  const [notification, setNotification] = useState<{ show: boolean; routine: Routine | null }>({ show: false, routine: null });
+  const [showImageModal, setShowImageModal] = useState<{ show: boolean; routine: Routine | null }>({ show: false, routine: null });
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // 2. 마운트 시 localStorage에서 한 번만 불러오기
-  useEffect(() => {
+  const days = ['일', '월', '화', '수', '목', '금', '토'];
+
+  // localStorage 관련 로직을 useCallback으로 최적화
+  const loadRoutines = useCallback(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('routines');
       if (saved) setRoutines(JSON.parse(saved));
     }
   }, []);
 
-  // 3. routines가 바뀔 때만 localStorage에 저장
-  useEffect(() => {
+  const saveRoutines = useCallback((updatedRoutines: Routine[]) => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('routines', JSON.stringify(routines));
+      localStorage.setItem('routines', JSON.stringify(updatedRoutines));
     }
-  }, [routines]);
+  }, []);
+
+  useEffect(() => {
+    loadRoutines();
+  }, [loadRoutines]);
+
+  useEffect(() => {
+    saveRoutines(routines);
+  }, [routines, saveRoutines]);
 
   // 날짜, 요일, 시간 표시용 상태
-  const [mounted, setMounted] = useState(false);
-  const [now, setNow] = useState(new Date());
-
   useEffect(() => {
     setMounted(true);
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const days = ['일', '월', '화', '수', '목', '금', '토'];
   const dateString = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const dayString = days[now.getDay()];
   const timeString = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
@@ -272,10 +269,6 @@ export default function Home() {
     setRoutines(prev => prev.map(r => r.id === id ? { ...r, completed: true } : r));
   };
 
-  // 이미지 모달
-  //const [showImageModal, setShowImageModal] = useState<{ show: boolean; routine: Routine | null }>({ show: false, routine: null });
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
   // 알람 소리 설정
   useEffect(() => {
     // 알람 소리 파일 존재 여부 확인
@@ -297,11 +290,6 @@ export default function Home() {
   }, []);
 
   // 알림 체크 로직 수정
-  //const [notification, setNotification] = useState<{
-    show: boolean;
-    routine: Routine | null;
-  }>({ show: false, routine: null });
-
   useEffect(() => {
     const checkAlarms = () => {
       const now = new Date();
@@ -412,9 +400,6 @@ export default function Home() {
       streak
     });
   }, [routines]);
-
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [goals, setGoals] = useState<{ projects: string; objectives: string }>({ projects: '', objectives: '' });
 
   // 클라이언트 사이드 초기화
   useEffect(() => {
