@@ -13,81 +13,89 @@ interface Notification {
   createdAt: string;
 }
 
+export const dynamic = 'force-dynamic';
+
 export default function NotificationsPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (session) {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    } else if (status === 'authenticated') {
       fetchNotifications();
     }
-  }, [session]);
+  }, [status, router]);
 
   const fetchNotifications = async () => {
     try {
+      setLoading(true);
+      setError(null);
       const response = await fetch('/api/notifications');
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || '알림을 불러오는데 실패했습니다.');
+        throw new Error('알림을 불러오는데 실패했습니다.');
       }
-
+      const data = await response.json();
       setNotifications(data);
-    } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError('알림을 불러오는데 실패했습니다.');
-      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   const handleRead = async (id: string) => {
     try {
-      const response = await fetch(`/api/notifications/${id}/read`, {
-        method: 'POST',
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || '알림 읽음 처리에 실패했습니다.');
-      }
-
-      setNotifications(prev =>
-        prev.map(notification =>
-          notification.id === id
-            ? { ...notification, read: true }
-            : notification
-        )
+      await fetch(`/api/notifications/${id}/read`, { method: 'POST' });
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
       );
-    } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError('알림 읽음 처리에 실패했습니다.');
-      }
+    } catch (err) {
+      // 에러 무시
     }
   };
 
-  if (!session) {
-    router.push('/login');
-    return null;
+  if (status === 'loading' || loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="animate-pulse space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-4 h-24" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  if (isLoading) {
+  if (status === 'unauthenticated') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 p-4">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-            <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
+          <div className="bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-600 dark:text-red-400">
+            <p>로그인이 필요합니다.</p>
+            <button
+              onClick={() => router.push('/login')}
+              className="mt-4 text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+            >
+              로그인하기
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-600 dark:text-red-400">
+            {error}
           </div>
         </div>
       </div>
@@ -95,75 +103,36 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 p-4">
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-          <div className="flex items-center mb-8">
-            <button
-              onClick={() => router.back()}
-              className="flex items-center text-primary hover:text-primary-hover"
-            >
-              <FaArrowLeft className="mr-2" />
-              돌아가기
-            </button>
-          </div>
-
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">알림</h1>
-
-          {error && (
-            <div className="mb-4 p-3 text-sm text-red-500 bg-red-50 dark:bg-red-900/50 rounded-lg">
-              {error}
-            </div>
-          )}
-
+        <div className="flex items-center gap-4 mb-6">
+          <button
+            onClick={() => router.back()}
+            className="p-2 rounded-full bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow"
+          >
+            <FaArrowLeft className="text-gray-600 dark:text-gray-400" />
+          </button>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">알림</h1>
+        </div>
+        <div className="space-y-4">
           {notifications.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500 dark:text-gray-400">알림이 없습니다.</p>
-            </div>
+            <div className="text-gray-500 dark:text-gray-400">알림이 없습니다.</div>
           ) : (
-            <div className="space-y-4">
-              {notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`p-4 rounded-lg shadow ${
-                    notification.read
-                      ? 'bg-white dark:bg-gray-700'
-                      : 'bg-blue-50 dark:bg-blue-900/50'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0">
-                        <FaBell className={`h-6 w-6 ${
-                          notification.read
-                            ? 'text-gray-400 dark:text-gray-500'
-                            : 'text-blue-500 dark:text-blue-400'
-                        }`} />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                          {notification.title}
-                        </h3>
-                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                          {notification.message}
-                        </p>
-                        <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
-                          {new Date(notification.createdAt).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                    {!notification.read && (
-                      <button
-                        onClick={() => handleRead(notification.id)}
-                        className="ml-4 px-3 py-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                      >
-                        읽음
-                      </button>
-                    )}
-                  </div>
+            notifications.map((notification) => (
+              <div
+                key={notification.id}
+                className={`bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm flex items-center gap-4 ${notification.read ? 'opacity-60' : ''}`}
+                onClick={() => handleRead(notification.id)}
+              >
+                <FaBell className="text-indigo-500" />
+                <div className="flex-1">
+                  <div className="font-semibold text-gray-900 dark:text-white">{notification.title}</div>
+                  <div className="text-gray-600 dark:text-gray-400">{notification.message}</div>
+                  <div className="text-xs text-gray-400 mt-1">{new Date(notification.createdAt).toLocaleString()}</div>
                 </div>
-              ))}
-            </div>
+                {!notification.read && <span className="text-xs text-indigo-500">NEW</span>}
+              </div>
+            ))
           )}
         </div>
       </div>

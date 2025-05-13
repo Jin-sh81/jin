@@ -21,6 +21,8 @@ interface Statistics {
   repeatStats: Record<string, number>;
 }
 
+export const dynamic = 'force-dynamic';
+
 export default function StatisticsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -77,9 +79,26 @@ export default function StatisticsPage() {
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 p-4">
         <div className="max-w-4xl mx-auto">
           <div className="animate-pulse space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-4 h-24" />
-            ))}
+            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+            <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === 'unauthenticated') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-600 dark:text-red-400">
+            <p>로그인이 필요합니다.</p>
+            <button
+              onClick={() => router.push('/login')}
+              className="mt-4 text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+            >
+              로그인하기
+            </button>
           </div>
         </div>
       </div>
@@ -114,7 +133,6 @@ export default function StatisticsPage() {
           </button>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">통계</h1>
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">전체 루틴</h2>
@@ -130,7 +148,6 @@ export default function StatisticsPage() {
               </p>
             </div>
           </div>
-
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">오늘의 루틴</h2>
             <div className="space-y-2">
@@ -146,7 +163,6 @@ export default function StatisticsPage() {
             </div>
           </div>
         </div>
-
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm mb-8">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">주간 통계</h2>
           <div className="space-y-4">
@@ -165,7 +181,6 @@ export default function StatisticsPage() {
             ))}
           </div>
         </div>
-
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">반복 설정</h2>
           <div className="space-y-2">

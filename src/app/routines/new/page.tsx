@@ -16,8 +16,10 @@ const COLORS = [
   '#EC4899', // pink
 ];
 
+export const dynamic = 'force-dynamic';
+
 export default function NewRoutinePage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [time, setTime] = useState('');
@@ -28,44 +30,44 @@ export default function NewRoutinePage() {
   const [beforeImage, setBeforeImage] = useState<File | null>(null);
   const [afterImage, setAfterImage] = useState<File | null>(null);
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-2xl mx-auto">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+            <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === 'unauthenticated') {
+    router.push('/login');
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setLoading(true);
     setError('');
-
     try {
-      const formData = new FormData();
-      formData.append('title', title);
-      formData.append('time', time);
-      formData.append('color', color);
-      formData.append('message', message);
-      formData.append('repeat', JSON.stringify(repeat));
-      formData.append('notification', String(notification));
-      if (beforeImage) formData.append('beforeImage', beforeImage);
-      if (afterImage) formData.append('afterImage', afterImage);
-
       const response = await fetch('/api/routines', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, time }),
       });
-
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || '루틴 생성에 실패했습니다.');
+        throw new Error('루틴 생성에 실패했습니다.');
       }
-
       router.push('/routines');
-    } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError('루틴 생성에 실패했습니다.');
-      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -76,11 +78,6 @@ export default function NewRoutinePage() {
         : [...prev, day]
     );
   };
-
-  if (!session) {
-    router.push('/login');
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6 lg:px-8">
@@ -238,10 +235,10 @@ export default function NewRoutinePage() {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={loading}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? '생성 중...' : '루틴 생성'}
+              {loading ? '생성 중...' : '루틴 생성'}
             </button>
           </form>
         </div>

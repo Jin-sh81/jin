@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { FaPlus, FaCheck, FaEdit, FaTrash, FaBell, FaRedo } from 'react-icons/fa';
+import { FaPlus, FaCheck, FaEdit, FaTrash, FaBell, FaRedo, FaArrowLeft } from 'react-icons/fa';
 
 interface Routine {
   id: string;
@@ -17,7 +17,11 @@ interface Routine {
   beforeImage?: string;
   afterImage?: string;
   files: string[];
+  createdAt: string;
+  updatedAt: string;
 }
+
+export const dynamic = 'force-dynamic';
 
 export default function RoutinesPage() {
   const { data: session, status } = useSession();
@@ -97,6 +101,24 @@ export default function RoutinesPage() {
     );
   }
 
+  if (status === 'unauthenticated') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-600 dark:text-red-400">
+            <p>로그인이 필요합니다.</p>
+            <button
+              onClick={() => router.push('/login')}
+              className="mt-4 text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+            >
+              로그인하기
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 p-4">
@@ -112,8 +134,17 @@ export default function RoutinesPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 p-4">
       <div className="max-w-4xl mx-auto">
+        <div className="flex items-center gap-4 mb-6">
+          <button
+            onClick={() => router.back()}
+            className="p-2 rounded-full bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow"
+          >
+            <FaArrowLeft className="text-gray-600 dark:text-gray-400" />
+          </button>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">루틴 목록</h1>
+        </div>
+
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">내 루틴</h1>
           <button
             onClick={() => router.push('/routines/new')}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors"
