@@ -1,21 +1,20 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import type { Routine } from '@prisma/client';
 
-interface Routine {
-  completed: boolean;
-  createdAt: Date;
+interface RoutineWithRepeat extends Routine {
   repeat: string[];
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json(
-        { message: '인증이 필요합니다.' },
+        { error: '인증이 필요합니다.' },
         { status: 401 }
       );
     }
@@ -24,57 +23,46 @@ export async function GET(request: Request) {
       where: {
         userId: session.user.id,
       },
-      select: {
-        completed: true,
-        createdAt: true,
-        repeat: true,
-      },
-    }) as Routine[];
+    }) as RoutineWithRepeat[];
 
     const totalRoutines = routines.length;
-    const completedRoutines = routines.filter((routine: Routine) => routine.completed).length;
+    const completedRoutines = routines.filter((r: RoutineWithRepeat) => r.completed).length;
     const completionRate = totalRoutines > 0 ? (completedRoutines / totalRoutines) * 100 : 0;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const todayRoutines = routines.filter((routine: Routine) => {
-      const routineDate = new Date(routine.createdAt);
+    const todayRoutines = routines.filter((r: RoutineWithRepeat) => {
+      const routineDate = new Date(r.createdAt);
       routineDate.setHours(0, 0, 0, 0);
       return routineDate.getTime() === today.getTime();
     });
 
-    const todayCompletedRoutines = todayRoutines.filter((routine: Routine) => routine.completed).length;
-    const todayCompletionRate = todayRoutines.length > 0 ? (todayCompletedRoutines / todayRoutines.length) * 100 : 0;
+    const todayCompleted = todayRoutines.filter((r: RoutineWithRepeat) => r.completed).length;
+    const todayCompletionRate = todayRoutines.length > 0 ? (todayCompleted / todayRoutines.length) * 100 : 0;
 
-    const weeklyStats = Array(7).fill(0).map((_, index) => {
+    const weeklyStats = Array.from({ length: 7 }, (_, i) => {
       const date = new Date();
-      date.setDate(date.getDate() - index);
+      date.setDate(date.getDate() - i);
       date.setHours(0, 0, 0, 0);
 
-      const dayRoutines = routines.filter((routine: Routine) => {
-        const routineDate = new Date(routine.createdAt);
+      const dayRoutines = routines.filter((r: RoutineWithRepeat) => {
+        const routineDate = new Date(r.createdAt);
         routineDate.setHours(0, 0, 0, 0);
         return routineDate.getTime() === date.getTime();
       });
 
-      const completedDayRoutines = dayRoutines.filter((routine: Routine) => routine.completed).length;
-      const completionRate = dayRoutines.length > 0 ? (completedDayRoutines / dayRoutines.length) * 100 : 0;
-
       return {
         date: date.toISOString().split('T')[0],
         total: dayRoutines.length,
-        completed: completedDayRoutines,
-        completionRate,
+        completed: dayRoutines.filter((r: RoutineWithRepeat) => r.completed).length,
+        completionRate: dayRoutines.length > 0 ? (dayRoutines.filter((r: RoutineWithRepeat) => r.completed).length / dayRoutines.length) * 100 : 0,
       };
-    }).reverse();
+    });
 
-    const repeatStats = routines.reduce((acc: Record<string, number>, routine: Routine) => {
+    const repeatStats = routines.reduce((acc: Record<string, number>, routine: RoutineWithRepeat) => {
       routine.repeat.forEach((day: string) => {
-        if (!acc[day]) {
-          acc[day] = 0;
-        }
-        acc[day]++;
+        acc[day] = (acc[day] || 0) + 1;
       });
       return acc;
     }, {});
@@ -84,7 +72,7 @@ export async function GET(request: Request) {
       completedRoutines,
       completionRate,
       todayRoutines: todayRoutines.length,
-      todayCompletedRoutines,
+      todayCompleted,
       todayCompletionRate,
       weeklyStats,
       repeatStats,
@@ -92,7 +80,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('통계 조회 중 오류 발생:', error);
     return NextResponse.json(
-      { message: '통계 조회에 실패했습니다.' },
+      { error: '통계를 불러오는 중 오류가 발생했습니다.' },
       { status: 500 }
     );
   }
