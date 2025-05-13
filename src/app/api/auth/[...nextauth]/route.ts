@@ -5,6 +5,7 @@ import GoogleProvider from "next-auth/providers/google";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import NextAuth from "next-auth/next";
+import { authOptions } from '@/lib/auth';
 
 const prisma = new PrismaClient();
 
