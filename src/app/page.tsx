@@ -133,7 +133,7 @@ function SortableRoutine({ routine, onToggle, onDelete, onImageUpload, onShowIma
   );
 }
 
-export default function Home() {
+function Home() {
   const [t, setT] = useState<any>(null);
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [newRoutine, setNewRoutine] = useState<NewRoutine>({
