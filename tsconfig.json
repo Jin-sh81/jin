@@ -1,0 +1,61 @@
+{
+    "compilerOptions": {
+      // 🔽 기본 설정
+      "target": "ES2020",
+      "useDefineForClassFields": true,
+      "lib": ["ES2020", "DOM", "DOM.Iterable"],
+      "module": "ESNext",
+      "skipLibCheck": true,
+  
+      // 🔽 모듈 해석 설정
+      "moduleResolution": "bundler",
+      "allowImportingTsExtensions": true,
+      "resolveJsonModule": true,
+      "isolatedModules": true,
+      "noEmit": true,
+      "jsx": "react-jsx",
+  
+      // 🔽 타입 체크 설정
+      "strict": true,
+      "noUnusedLocals": true,
+      "noUnusedParameters": true,
+      "noFallthroughCasesInSwitch": true,
+  
+      // 🔽 경로 별칭 설정
+      "baseUrl": ".",
+      "paths": {
+        "@/*": ["src/*"],
+        "@hooks/*": ["src/hooks/*"],
+        "@utils/*": ["src/utils/*"],
+        "@types/*": ["src/types/*"],
+        "@services/*": ["src/services/*"],
+        "@shared/*": ["src/shared/*"]
+      }
+    },
+    "include": ["src"],
+    "exclude": ["node_modules", "dist"],
+    "references": [{ "path": "./tsconfig.node.json" }]
+  }
+  
+  /*
+   * 🔥 TypeScript 설정 변경 후 필수 단계
+   * 
+   * 1. VS Code를 사용하는 경우:
+   *    - Command Palette (Ctrl+Shift+P 또는 Cmd+Shift+P)
+   *    - "TypeScript: Restart TS Server" 선택
+   * 
+   * 2. 터미널에서 프로젝트 재시작:
+   *    - 개발 서버 중지 (Ctrl+C)
+   *    - npm run dev 또는 yarn dev로 재시작
+   * 
+   * 3. 캐시 삭제가 필요한 경우:
+   *    - node_modules/.cache 폴더 삭제
+   *    - npm install 또는 yarn install 실행
+   * 
+   * 4. 경로 별칭 사용 예시:
+   *    - import { useAuth } from '@hooks/useAuth'
+   *    - import { formatDate } from '@utils/date'
+   *    - import { User } from '@types/user'
+   *    - import { api } from '@services/api'
+   *    - import { Button } from '@shared/atoms/Button'
+   */

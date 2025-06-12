@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    // 🔽 Node.js 환경 설정
+    "composite": true, // 프로젝트 참조를 위한 설정
+    "skipLibCheck": true, // 라이브러리 타입 체크 건너뛰기
+    "module": "ESNext", // 모듈 시스템
+    "moduleResolution": "bundler", // 모듈 해석 방식
+    "allowSyntheticDefaultImports": true // 기본 임포트 허용
+  },
+  // 🔽 포함할 파일
+  "include": ["vite.config.ts"]
+} 
