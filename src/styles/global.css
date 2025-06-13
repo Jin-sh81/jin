@@ -1,0 +1,121 @@
+/* 🌍 global.css: 다크/라이트 테마 색상 팔레트와 전역 스타일이에요! */
+
+/* 📱 모바일, 🧳 태블릿, 🖥️ 데스크톱에서 각각 다르게 보이도록 미디어 쿼리를 사용해요 */
+body {
+  font-family: 'Pretendard', 'Arial', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding: 0;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* 모바일(최대 640px) */
+@media (max-width: 640px) {
+  .responsive-form {
+    padding: 16px;
+    font-size: 16px;
+  }
+}
+
+/* 태블릿(641px ~ 1024px) */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .responsive-form {
+    padding: 32px;
+    font-size: 18px;
+  }
+}
+
+/* 데스크톱(1025px 이상) */
+@media (min-width: 1025px) {
+  .responsive-form {
+    padding: 48px;
+    font-size: 20px;
+  }
+}
+
+/* 라이트 테마(기본) */
+body.light {
+  --bg: #f9fafb;
+  --text: #222;
+  --primary: #2563eb;
+  --card: #fff;
+}
+
+/* 다크 테마 */
+body.dark {
+  --bg: #18181b;
+  --text: #f4f4f5;
+  --primary: #60a5fa;
+  --card: #23232b;
+}
+
+/* 카드/폼 등 */
+.responsive-form {
+  background: var(--card);
+  color: var(--text);
+}
+
+/* 버튼 등에서 var(--primary) 사용 가능 */
+
+/* 🖼️ 프로필 이미지 스타일 */
+img[alt="프로필 미리보기"] {
+  border: 2px solid var(--primary);
+  background: #fff;
+}
+
+/* ⚙️ 설정 폼에 적용되는 스타일 예시 */
+.settings-form label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+.settings-form select,
+.settings-form input[type="checkbox"] {
+  margin-left: 8px;
+}
+
+/* 🧑‍💼 계정 관리 버튼 스타일 */
+button {
+  margin-bottom: 8px;
+}
+
+/* 📋 로그인 기록 테이블 스타일 */
+.activity-log-table th, .activity-log-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+.activity-log-table th {
+  background: #f3f4f6;
+}
+
+/* 📋 활동 로그 테이블 스타일 */
+.activity-log-table th, .activity-log-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+  }
+  .activity-log-table th {
+    background: #f3f4f6;
+  }
+
+/* 🛡️ 보안 알림 리스트 스타일 */
+.security-alert-list li {
+  border-left: 4px solid #2563eb;
+}
+.dark .security-alert-list li {
+  border-left-color: #60a5fa;
+  background: #23232b;
+}
+
+/* 🗝️ 세션/기기 테이블 스타일 */
+.session-table th, .session-table td,
+.device-table th, .device-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+.session-table th, .device-table th {
+  background: #f3f4f6;
+}

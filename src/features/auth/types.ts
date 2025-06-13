@@ -20,4 +20,26 @@ export interface AuthState {
   loading: boolean;
   // 🚨 error: 로그인 중 생긴 오류 메시지를 담아요
   error: string | null;
-} 
+  // 🔄 isGoogleLoading: 구글 로그인 중인지 알려주는 표시등이에요
+  isGoogleLoading: boolean;
+  // 💾 rememberMe: 로그인 상태를 기억할지 여부를 알려줘요
+  rememberMe: boolean;
+}
+
+// 🔑 LoginCredentials: 로그인에 필요한 정보를 담는 상자예요
+export interface LoginCredentials {
+  // 📧 email: 사용자의 이메일이에요
+  email: string;
+  // 🔒 password: 사용자의 비밀번호예요
+  password: string;
+  // 💾 rememberMe: 로그인 상태를 기억할지 여부예요
+  rememberMe: boolean;
+}
+
+// 🔄 AuthAction: 인증 관련 동작을 정의해요
+export type AuthAction = 
+  | { type: 'LOGIN_START' }
+  | { type: 'LOGIN_SUCCESS'; payload: User }
+  | { type: 'LOGIN_FAILURE'; payload: string }
+  | { type: 'LOGOUT' }
+  | { type: 'SET_REMEMBER_ME'; payload: boolean }; 

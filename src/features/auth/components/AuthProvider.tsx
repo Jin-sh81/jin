@@ -4,7 +4,14 @@ import { useAuth } from '../hooks'
 import { AuthState } from '../types'
 
 // 📦 AuthContext: 인증 상태를 담는 상자(컨테이너)를 만들어요
-const AuthContext = createContext<AuthState | undefined>(undefined)
+interface AuthContextType extends AuthState {
+  login: (credentials: LoginCredentials) => Promise<void>;
+  logout: () => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  setRememberMe: (value: boolean) => void;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 // 🎁 AuthProvider: 상자(AuthContext)에 인증 상태를 넣고, 아래 자식들에게 나눠줘요
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
