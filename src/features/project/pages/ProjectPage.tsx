@@ -1,119 +1,123 @@
-import { useState, useEffect, useCallback } from 'react'
+// 📊 ProjectPage: 프로젝트 통계와 목록을 한 눈에 볼 수 있는 메인 페이지예요!
+
+// 📦 React, useEffect, useState, getProjectStats, useAuth, useNavigate 등 필요한 모듈을 가져와요
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getProjects, createProject } from '@/services/projectService'
-import type { Project } from '@/types/project'
-import ProjectList from '../components/ProjectList'
-import ProjectForm from '../components/ProjectForm'
-import Button from '@/shared/components/Button'
 import { useAuth } from '@/hooks/useAuth'
-import { PlusIcon } from '@heroicons/react/24/outline'
+import { getProjectStats } from '@/services/projectService'
+import ProjectList from '../components/ProjectList'
+import { ProjectStats } from '../components/ProjectStats'
+import type { Project } from '@/types/firestore'
 
 const ProjectPage = () => {
-  const navigate = useNavigate()
+  // 🔑 useAuth: 로그인된 사용자 UID를 가져와요
   const { user } = useAuth()
+  const navigate = useNavigate()
+
+  // 📈 stats: { total, completed, rate } 형태의 통계 데이터를 저장해요
+  // 📋 projects: 프로젝트 목록을 저장해요 (추후 fetchProjects 추가)
+  // ⏳ isLoading: 데이터 불러오기 로딩 상태를 알려줘요
+  // 🚨 error: 데이터 로딩 중 에러 메시지를 저장해요
+  const [stats, setStats] = useState({ total: 0, completed: 0, rate: 0 })
   const [projects, setProjects] = useState<Project[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [isCreating, setIsCreating] = useState(false)
 
-  const fetchProjects = useCallback(async () => {
+  // 🔄 useEffect: 컴포넌트 마운트 시 getProjectStats를 호출해 stats 상태를 업데이트해요
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!user) return
+
+      try {
+        setIsLoading(true)
+        const statsData = await getProjectStats(user.uid)
+        setStats({
+          total: statsData.totalProjects,
+          completed: statsData.completedProjects,
+          rate: statsData.completionRate
+        })
+      } catch (error) {
+        console.error('통계 데이터 로딩 실패:', error)
+        setError('통계 데이터를 불러오는데 실패했어요')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchStats()
+  }, [user])
+
+  // 🔍 fetchProjects: 서버에서 프로젝트 목록을 가져와 projects 상태에 저장해요
+  const fetchProjects = async () => {
     if (!user) return
 
     try {
       setIsLoading(true)
-      setError(null)
-
-      const projectsData = await getProjects(user.uid)
-      setProjects(projectsData)
+      // TODO: 프로젝트 목록 가져오기 구현
+      setProjects([])
     } catch (error) {
       console.error('프로젝트 목록 로딩 실패:', error)
-      setError('프로젝트 목록을 불러오는데 실패했습니다.')
+      setError('프로젝트 목록을 불러오는데 실패했어요')
     } finally {
       setIsLoading(false)
     }
-  }, [user])
-
-  useEffect(() => {
-    fetchProjects()
-  }, [fetchProjects])
-
-  const handleCreateProject = async (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
-    if (!user) return
-
-    try {
-      setError(null)
-      const newProject = await createProject(user.uid, {
-        ...project,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      })
-      if (newProject) {
-        await fetchProjects() // 프로젝트 목록 새로고침
-        setIsCreating(false)
-      }
-    } catch (error) {
-      console.error('프로젝트 생성 실패:', error)
-      setError('프로젝트 생성에 실패했습니다.')
-    }
-  }
-
-  const handleProjectClick = (projectId: string) => {
-    navigate(`/projects/${projectId}`)
   }
 
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">데이터를 불러오는 중이에요...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <p className="text-red-600">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            다시 시도
+          </button>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">프로젝트</h1>
+    <div className="container mx-auto px-4 py-8">
+      {/* 📊 통계 영역: stats.total, stats.completed, stats.rate를 보여줘요 */}
+      <div className="mb-8">
+        <ProjectStats
+          total={stats.total}
+          completed={stats.completed}
+          rate={stats.rate}
+        />
+      </div>
+
+      {/* ➕ 프로젝트 생성 또는 상세 페이지로 이동할 버튼을 배치할 수 있어요 */}
+      <div className="flex justify-end mb-6">
         <button
-          onClick={() => setIsCreating(true)}
-          disabled={isLoading}
-          className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={() => navigate('/projects/new')}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
         >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          프로젝트 생성
+          새 프로젝트 만들기
         </button>
       </div>
 
-      {error && (
-        <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
-          {error}
-        </div>
-      )}
-
-      {isCreating && (
-        <div className="mb-8 bg-white p-6 rounded-lg shadow">
-          <ProjectForm
-            onSubmit={handleCreateProject}
-            onCancel={() => setIsCreating(false)}
-          />
-        </div>
-      )}
-
-      {projects.length > 0 ? (
-        <ProjectList
-          projects={projects}
-          onProjectClick={handleProjectClick}
-          onUpdate={fetchProjects}
-          onDelete={fetchProjects}
-        />
-      ) : (
-        <div className="text-center py-12">
-          <p className="text-gray-500">
-            {isCreating
-              ? '새 프로젝트를 생성해보세요.'
-              : '등록된 프로젝트가 없습니다.'}
-          </p>
-        </div>
-      )}
+      {/* 📜 ProjectList 컴포넌트: projects 배열을 전달해 렌더링해요 */}
+      <ProjectList
+        projects={projects}
+        onProjectClick={(project: Project) => navigate(`/projects/${project.id}`)}
+        onUpdate={fetchProjects}
+        onDelete={fetchProjects}
+      />
     </div>
   )
 }

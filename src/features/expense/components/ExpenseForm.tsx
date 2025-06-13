@@ -1,4 +1,12 @@
-import { useState } from 'react'
+// 📝 ExpenseForm: 새로운 지출을 추가하거나 기존 지출을 수정할 수 있는 입력 폼이에요!
+// 📋 기능 검증 명령서:
+// 1. 금액 입력 시 숫자만 입력되는지 확인해요
+// 2. 필수 입력(금액>0, 제목)이 잘 검증되는지 확인해요
+// 3. 제출 버튼이 잘 작동하는지 확인해요
+// 4. 취소 버튼이 잘 작동하는지 확인해요
+// 5. 로딩 중일 때 버튼이 비활성화되는지 확인해요
+
+import { useState, useEffect } from 'react'
 import type { Expense, ExpenseCategory } from '@/types/expense'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
@@ -16,22 +24,29 @@ interface ExpenseFormProps {
 const ExpenseForm = ({ expense, onSubmit, onCancel }: ExpenseFormProps) => {
   const { user } = useAuth()
   
-  // 폼 상태 관리 - 기본값 안전 처리
+  // ✏️ title: 지출 제목을 저장해요
   const [title, setTitle] = useState<string>(expense?.title || '')
+  // 📝 description: 지출 설명을 저장해요
   const [description, setDescription] = useState<string>(expense?.description || '')
+  // 💰 amount: 지출 금액을 숫자로 저장해요
   const [amount, setAmount] = useState<number>(expense?.amount || 0)
+  // 🏷️ category: 지출 카테고리를 저장해요
   const [category, setCategory] = useState<ExpenseCategory>(expense?.category || 'food')
+  // 📅 date: 지출 날짜를 YYYY-MM-DD 형식으로 저장해요
   const [date, setDate] = useState<string>(expense?.date || format(new Date(), 'yyyy-MM-dd'))
+  // ⏳ isSubmitting: 제출 중 로딩 표시를 제어해요
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+  // �� error: 검증이나 제출 중 발생한 에러 메시지를 저장해요
   const [error, setError] = useState<string | null>(null)
 
-  // 금액 입력 처리
+  // 🔢 handleAmountChange: 숫자가 아닌 문자를 제거하고 금액 상태를 안전하게 업데이트해요
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^0-9]/g, '')
     setAmount(value ? parseInt(value) : 0)
   }
 
-  // 폼 제출 처리
+  // ✋ 폼 제출 방지: 페이지 리로드 없이 제출을 처리해요
+  // 🚨 로그인 여부 및 필수 필드(금액 > 0, 제목) 검증 후 에러 메시지를 보여줘요
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -52,7 +67,11 @@ const ExpenseForm = ({ expense, onSubmit, onCancel }: ExpenseFormProps) => {
     }
 
     try {
+      // 🔄 isSubmitting true: 제출 시작
       setIsSubmitting(true)
+      setError(null)
+
+      // 💾 onSubmit: 부모 컴포넌트에 지출 데이터를 전달해요
       await onSubmit({
         title: title.trim(),
         description: description.trim(),
@@ -61,9 +80,16 @@ const ExpenseForm = ({ expense, onSubmit, onCancel }: ExpenseFormProps) => {
         date,
         userId: user.uid
       })
+
+      // 🆕 제출 후 상태 초기화: 취소나 재작성 대비
+      setTitle('')
+      setDescription('')
+      setAmount(0)
+      setCategory('food')
+      setDate(format(new Date(), 'yyyy-MM-dd'))
     } catch (error) {
       console.error('지출 저장 실패:', error)
-      setError('지출 저장에 실패했습니다. 다시 시도해주세요.')
+      setError('지출을 저장하는데 실패했습니다.')
     } finally {
       setIsSubmitting(false)
     }
@@ -71,6 +97,7 @@ const ExpenseForm = ({ expense, onSubmit, onCancel }: ExpenseFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* 🚨 error: 에러 메시지 표시 */}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
           {error}
@@ -164,6 +191,7 @@ const ExpenseForm = ({ expense, onSubmit, onCancel }: ExpenseFormProps) => {
       </div>
 
       <div className="flex justify-end space-x-3">
+        {/* ❌ 취소 버튼: onCancel 콜백을 호출해요 */}
         <button
           type="button"
           onClick={onCancel}
@@ -172,6 +200,7 @@ const ExpenseForm = ({ expense, onSubmit, onCancel }: ExpenseFormProps) => {
         >
           취소
         </button>
+        {/* 🔘 생성/수정 버튼: 제출 상태에 따라 '생성하기' 또는 '수정하기'로 표시해요 */}
         <button
           type="submit"
           className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"

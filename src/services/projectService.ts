@@ -1,7 +1,7 @@
 import { db, storage } from '@/infrastructure/firebase/firebaseConfig'
 import { collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc, query, where, orderBy, Timestamp } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
-import type { Project, ProjectTask, ProjectStats } from '@/types/project'
+import type { Project, ProjectTask } from '@/types/firestore'
 
 // 프로젝트 컬렉션 참조 가져오기
 const getProjectsRef = (uid: string) => collection(db, 'users', uid, 'projects')
@@ -35,18 +35,26 @@ export const getProject = async (uid: string, projectId: string): Promise<Projec
 }
 
 // 프로젝트 생성
-export const createProject = async (uid: string, project: Omit<Project, 'id'>): Promise<Project> => {
-  try {
-    const projectsRef = getProjectsRef(uid)
-    const docRef = await addDoc(projectsRef, {
-      ...project,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    })
-    return { id: docRef.id, ...project } as Project
-  } catch (error) {
-    console.error('프로젝트 생성 실패:', error)
-    throw new Error('프로젝트 생성에 실패했습니다.')
+export const createProject = async (
+  userId: string,
+  project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>
+): Promise<Project> => {
+  // 🔽 현재 시간을 Date 객체로 변환
+  const now = Timestamp.now().toDate()
+
+  // 🔽 Firestore에 새 문서 추가
+  const docRef = await addDoc(getProjectsRef(userId), {
+    ...project,
+    createdAt: now,
+    updatedAt: now
+  })
+
+  // 🔽 생성된 프로젝트 객체 반환
+  return {
+    id: docRef.id,
+    ...project,
+    createdAt: now,
+    updatedAt: now
   }
 }
 
@@ -54,9 +62,10 @@ export const createProject = async (uid: string, project: Omit<Project, 'id'>): 
 export const updateProject = async (uid: string, projectId: string, data: Partial<Project>): Promise<Project> => {
   try {
     const projectRef = doc(db, 'users', uid, 'projects', projectId)
+    const now = Timestamp.now().toDate()
     const updateData = {
       ...data,
-      updatedAt: new Date().toISOString()
+      updatedAt: now
     }
     await updateDoc(projectRef, updateData)
     const updatedDoc = await getDoc(projectRef)
@@ -71,9 +80,10 @@ export const updateProject = async (uid: string, projectId: string, data: Partia
 export const deleteProject = async (uid: string, projectId: string): Promise<void> => {
   try {
     const projectRef = doc(db, 'users', uid, 'projects', projectId)
+    const now = Timestamp.now().toDate()
     await updateDoc(projectRef, {
       deleted: true,
-      deletedAt: new Date().toISOString()
+      deletedAt: now
     })
   } catch (error) {
     console.error('프로젝트 삭제 실패:', error)
@@ -102,17 +112,18 @@ export const getProjectTasks = async (uid: string, projectId: string): Promise<P
 export const createProjectTask = async (uid: string, projectId: string, task: Omit<ProjectTask, 'id'>): Promise<ProjectTask> => {
   try {
     const tasksRef = collection(db, 'users', uid, 'projects', projectId, 'tasks')
+    const now = Timestamp.now().toDate()
     const docRef = await addDoc(tasksRef, {
       ...task,
-      createdAt: Timestamp.now().toDate().toISOString(),
-      updatedAt: Timestamp.now().toDate().toISOString()
+      createdAt: now,
+      updatedAt: now
     })
     
     return {
       id: docRef.id,
       ...task,
-      createdAt: Timestamp.now().toDate().toISOString(),
-      updatedAt: Timestamp.now().toDate().toISOString()
+      createdAt: now,
+      updatedAt: now
     } as ProjectTask
   } catch (error) {
     console.error('프로젝트 태스크 생성 실패:', error)
@@ -124,9 +135,10 @@ export const createProjectTask = async (uid: string, projectId: string, task: Om
 export const updateProjectTask = async (uid: string, projectId: string, taskId: string, task: Partial<ProjectTask>): Promise<ProjectTask> => {
   try {
     const taskRef = doc(db, 'users', uid, 'projects', projectId, 'tasks', taskId)
+    const now = Timestamp.now().toDate()
     const updatedTask = {
       ...task,
-      updatedAt: Timestamp.now().toDate().toISOString()
+      updatedAt: now
     }
     await updateDoc(taskRef, updatedTask)
     
@@ -145,9 +157,10 @@ export const updateProjectTask = async (uid: string, projectId: string, taskId: 
 export const deleteProjectTask = async (uid: string, projectId: string, taskId: string): Promise<void> => {
   try {
     const taskRef = doc(db, 'users', uid, 'projects', projectId, 'tasks', taskId)
+    const now = Timestamp.now().toDate()
     await updateDoc(taskRef, {
       deleted: true,
-      deletedAt: new Date().toISOString()
+      deletedAt: now
     })
   } catch (error) {
     console.error('프로젝트 태스크 삭제 실패:', error)
@@ -156,16 +169,20 @@ export const deleteProjectTask = async (uid: string, projectId: string, taskId: 
 }
 
 // 프로젝트 통계 조회
-export const getProjectStats = async (uid: string, projectId: string): Promise<ProjectStats> => {
+export const getProjectStats = async (uid: string): Promise<{
+  totalProjects: number;
+  completedProjects: number;
+  completionRate: number;
+}> => {
   try {
-    const project = await getProject(uid, projectId)
-    const totalTasks = project.tasks.length
-    const completedTasks = project.tasks.filter(task => task.status === 'completed').length
-    const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+    const projects = await getProjects(uid)
+    const totalProjects = projects.length
+    const completedProjects = projects.filter(project => project.status === 'completed').length
+    const completionRate = totalProjects > 0 ? Math.round((completedProjects / totalProjects) * 100) : 0
 
     return {
-      totalTasks,
-      completedTasks,
+      totalProjects,
+      completedProjects,
       completionRate
     }
   } catch (error) {

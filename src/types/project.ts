@@ -5,17 +5,12 @@
 // 🎨 프로젝트 타입 정의 파일이에요
 // 🔍 Firestore에서 가져오는 데이터와 컴포넌트에서 사용하는 데이터의 모양을 정해주는 규칙이에요
 
+// 🔽 프로젝트 타입 정의
 export interface Project {
-  id: string;                 // 프로젝트 고유 ID (각 프로젝트를 구분하는 번호예요)
-  title: string;              // 프로젝트 제목 (프로젝트의 이름이에요)
-  description?: string;       // 프로젝트 설명 (선택사항) (프로젝트에 대한 자세한 설명이에요)
-  status: 'not_started' | 'in_progress' | 'completed';  // 프로젝트 상태 (시작 전, 진행 중, 완료 중 하나를 선택해요)
-  startDate: string;          // 시작 날짜 (프로젝트를 시작하는 날짜예요)
-  endDate?: string;           // 종료 날짜 (선택사항) (프로젝트가 끝나는 날짜예요)
-  tasks: ProjectTask[];       // 작업 목록 (프로젝트 안에 있는 할 일들의 목록이에요)
-  createdAt: string;          // 생성 시간 (프로젝트를 만든 시간이에요)
-  updatedAt?: string;         // 수정 시간 (선택사항) (프로젝트를 마지막으로 수정한 시간이에요)
-  priority?: 'low' | 'medium' | 'high';  // 우선순위 (선택사항) (프로젝트의 중요도를 나타내요)
+  id: string        // 🔽 프로젝트의 고유 식별자
+  title: string     // 🔽 프로젝트 제목
+  description: string // 🔽 프로젝트 설명
+  createdAt: string  // 🔽 프로젝트 생성 시간
 }
 
 export interface ProjectTask {

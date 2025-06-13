@@ -63,6 +63,17 @@ export interface RoutineStats {
   updatedAt: Date;
 }
 
+// 프로젝트 작업 타입
+export interface ProjectTask {
+  id: string;
+  title: string;
+  description?: string;
+  status: 'todo' | 'in_progress' | 'completed';
+  priority: 'low' | 'medium' | 'high';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // 프로젝트 타입
 export interface Project {
   id: string;
@@ -71,6 +82,7 @@ export interface Project {
   startDate: Date;
   endDate?: Date;
   status: 'active' | 'completed' | 'archived';
+  tasks: ProjectTask[];
   createdAt: Date;
   updatedAt: Date;
 }

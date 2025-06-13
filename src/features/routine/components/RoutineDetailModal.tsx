@@ -8,23 +8,35 @@ import { useAuth } from '@/hooks/useAuth'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 
+// 🌟 RoutineDetailModal: 루틴의 자세한 정보를 모달 창으로 보여주는 컴포넌트예요!
+
+// 컴포넌트의 props 타입 정의
 interface RoutineDetailModalProps {
-  routine: Routine;
-  onClose: () => void;
-  onUpdate: (routine: Routine) => void;
-  onDelete: (routineId: string) => void;
+  routine: Routine;  // 보여줄 루틴 데이터
+  onClose: () => void;  // 모달 닫기 함수
+  onUpdate: (routine: Routine) => void;  // 루틴 업데이트 함수
+  onDelete: (routineId: string) => Promise<void>;  // 루틴 삭제 함수
 }
 
-export default function RoutineDetailModal({ routine, onClose, onUpdate, onDelete }: RoutineDetailModalProps) {
+// 루틴 상세 모달 컴포넌트
+const RoutineDetailModal = ({ routine, onClose, onUpdate, onDelete }: RoutineDetailModalProps) => {
+  // ✏️ isEditing: 편집 모드 여부를 저장해요
   const { user } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
+  // 📝 editedTitle: 수정 중인 제목을 저장해요
   const [editedTitle, setEditedTitle] = useState(routine.title)
+  // 📝 editedDescription: 수정 중인 설명을 저장해요
   const [editedDescription, setEditedDescription] = useState(routine.description || '')
+  // 🔁 editedFrequency: 수정 중인 반복 빈도를 저장해요
   const [editedFrequency, setEditedFrequency] = useState<Routine['frequency']>(routine.frequency)
+  // 📅 editedDaysOfWeek: 수정 중인 요일 배열을 저장해요
   const [editedDaysOfWeek, setEditedDaysOfWeek] = useState<number[]>(routine.daysOfWeek ? [...routine.daysOfWeek] : [])
+  // ⏰ editedTimeOfDay: 수정 중인 실행 시간을 저장해요
   const [editedTimeOfDay, setEditedTimeOfDay] = useState(routine.timeOfDay || '')
+  // 🗑️ isDeleting: 삭제 중 로딩 표시를 제어해요
   const [isDeleting, setIsDeleting] = useState(false)
 
+  // 💾 handleSave: 변경된 루틴 정보를 서버에 저장하고, 업데이트된 데이터를 보여줘요
   const handleSave = async () => {
     if (!user) return
     try {
@@ -45,6 +57,7 @@ export default function RoutineDetailModal({ routine, onClose, onUpdate, onDelet
     }
   }
 
+  // 🚫 handleDelete: 삭제 확인 후 루틴을 삭제하고 모달을 닫아요
   const handleDelete = async () => {
     if (!user) return
     try {
@@ -58,6 +71,7 @@ export default function RoutineDetailModal({ routine, onClose, onUpdate, onDelet
     }
   }
 
+  // 📆 getDayName: 숫자로 된 요일을 한국어 요일 이름으로 바꿔줘요
   const getDayName = (day: number): string => {
     const days = ['일', '월', '화', '수', '목', '금', '토']
     return days[day] ?? String(day)
@@ -237,9 +251,4 @@ export default function RoutineDetailModal({ routine, onClose, onUpdate, onDelet
   )
 }
 
-// 🔽 수정 로직 설명
-// 1. 수정 버튼 클릭 시 isEditing 상태가 true로 변경되어 수정 모드로 전환됩니다.
-// 2. 수정 모드에서는 모든 필드가 입력 가능한 상태로 변경됩니다.
-// 3. 저장 버튼 클릭 시 updateRoutine 함수를 호출하여 Firestore에 변경사항을 저장합니다.
-// 4. 저장 성공 시 isEditing이 false로 변경되어 보기 모드로 돌아갑니다.
-// 5. 취소 버튼 클릭 시 모든 입력값이 초기 상태로 되돌아가고 보기 모드로 전환됩니다. 
+export default RoutineDetailModal 

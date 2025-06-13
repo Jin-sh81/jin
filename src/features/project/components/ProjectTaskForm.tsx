@@ -1,6 +1,13 @@
-import React, { useState } from 'react'
-import { ProjectTask } from '@/types/project'
+// ✏️ ProjectTaskForm: 특정 프로젝트의 작업을 생성 또는 수정할 수 있는 입력 폼이에요!
 
+// 📦 React, useState, ProjectTask 타입 등 필요한 모듈을 가져와요
+import React, { useState } from 'react'
+import type { ProjectTask } from '@/types/firestore'
+
+// 🔢 projectId: 작업이 속한 프로젝트 ID
+// ➕ onSubmit: 새 작업 생성 또는 기존 작업 업데이트 콜백
+// 📥 initialData?: 수정할 작업의 초기 데이터를 받아요
+// ❌ onCancel: 폼 취소 시 호출되는 콜백
 interface ProjectTaskFormProps {
   projectId: string;
   onSubmit: (task: Omit<ProjectTask, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
@@ -14,12 +21,17 @@ export const ProjectTaskForm: React.FC<ProjectTaskFormProps> = ({
   initialData,
   onCancel,
 }) => {
+  // 📝 title: 작업 제목을 저장해요
+  // 📄 description: 작업 설명을 저장해요
+  // ⚙️ priority: 작업 우선순위를 저장해요
+  // ⏳ isSubmitting: 제출 중 로딩 표시를 제어해요
   const [title, setTitle] = useState(initialData?.title || '')
   const [description, setDescription] = useState(initialData?.description || '')
   const [priority, setPriority] = useState(initialData?.priority || 'medium')
-  const [dueDate, setDueDate] = useState(initialData?.dueDate || '')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // ✋ 폼 제출 방지: 페이지 리로드 없이 제출 처리해요
+  // 🚨 title 빈값 검증 및 projectId 존재 여부 확인
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim()) return
@@ -27,27 +39,30 @@ export const ProjectTaskForm: React.FC<ProjectTaskFormProps> = ({
       console.error('projectId가 없습니다')
       return
     }
+
+    // 🔄 isSubmitting true: 제출 시작
     setIsSubmitting(true)
     try {
+      // 💾 onSubmit 호출: 부모 컴포넌트에 작업 데이터를 전달해요
       await onSubmit({
-        projectId,
         title: title.trim(),
         description: description.trim(),
         priority,
-        dueDate: dueDate || undefined,
-        status: initialData?.status || 'todo',
-        completed: initialData?.completed || false,
+        status: initialData?.status || 'todo'
       })
+      // ✖️ onCancel: 제출 후 폼 닫기
       onCancel()
     } catch (error) {
       console.error('작업 저장 중 오류 발생:', error)
     } finally {
+      // 🔄 isSubmitting false: 제출 완료
       setIsSubmitting(false)
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* 📋 제목(input): title 상태와 연결돼 있어요 */}
       <div>
         <label htmlFor="title" className="block text-sm font-medium text-gray-700">
           제목
@@ -62,6 +77,7 @@ export const ProjectTaskForm: React.FC<ProjectTaskFormProps> = ({
         />
       </div>
 
+      {/* 📜 설명(textarea): description 상태와 연결돼 있어요 */}
       <div>
         <label htmlFor="description" className="block text-sm font-medium text-gray-700">
           설명
@@ -75,6 +91,7 @@ export const ProjectTaskForm: React.FC<ProjectTaskFormProps> = ({
         />
       </div>
 
+      {/* ⚙️ 우선순위(select): priority 상태와 연결돼 있어요 */}
       <div>
         <label htmlFor="priority" className="block text-sm font-medium text-gray-700">
           우선순위
@@ -82,7 +99,7 @@ export const ProjectTaskForm: React.FC<ProjectTaskFormProps> = ({
         <select
           id="priority"
           value={priority}
-          onChange={(e) => setPriority(e.target.value)}
+          onChange={(e) => setPriority(e.target.value as ProjectTask['priority'])}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
         >
           <option value="low">낮음</option>
@@ -91,20 +108,8 @@ export const ProjectTaskForm: React.FC<ProjectTaskFormProps> = ({
         </select>
       </div>
 
-      <div>
-        <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700">
-          마감일
-        </label>
-        <input
-          type="date"
-          id="dueDate"
-          value={dueDate}
-          onChange={(e) => setDueDate(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-        />
-      </div>
-
       <div className="flex justify-end space-x-3">
+        {/* ❌ 취소 버튼: onCancel 호출 */}
         <button
           type="button"
           onClick={onCancel}
@@ -112,6 +117,7 @@ export const ProjectTaskForm: React.FC<ProjectTaskFormProps> = ({
         >
           취소
         </button>
+        {/* ✅ 저장 버튼(type submit): handleSubmit 실행, isSubmitting 상태에 따라 disabled 처리 */}
         <button
           type="submit"
           disabled={isSubmitting}
@@ -122,5 +128,6 @@ export const ProjectTaskForm: React.FC<ProjectTaskFormProps> = ({
       </div>
     </form>
   )
-} 
+}
+
 export default ProjectTaskForm

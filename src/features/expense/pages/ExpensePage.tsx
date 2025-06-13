@@ -1,32 +1,46 @@
-import { useState, useEffect } from 'react'
-import { useAuth } from '@/hooks/useAuth'
-import { getExpenses, createExpense, updateExpense, deleteExpense } from '@/services/expenseService'
-import type { Expense } from '@/types/expense'
-import ExpenseList from '../components/ExpenseList'
-import ExpenseForm from '../components/ExpenseForm'
-import ExpenseDetailModal from '../components/ExpenseDetailModal'
+// 💰 ExpensePage: 사용자가 지출 내역을 보고 추가, 수정, 삭제할 수 있는 페이지예요!
+// 📋 기능 검증 명령서:
+// 1. 지출 목록이 잘 불러와지는지 확인해요
+// 2. 새 지출 작성 폼이 잘 열리고 닫히는지 확인해요
+// 3. 지출 수정과 삭제가 잘 되는지 확인해요
+// 4. 지출을 클릭하면 상세 페이지로 잘 이동하는지 확인해요
+// 5. 로딩 중일 때 로딩 표시가 잘 보이는지 확인해요
+// 6. 에러가 발생했을 때 에러 메시지가 잘 보이는지 확인해요
 
-// 💰 ExpensePage는 우리의 지출 내역을 보여주는 페이지예요
-// 📊 모든 지출 내역을 한눈에 볼 수 있어요
-const ExpensePage = () => {
-  const { user } = useAuth()
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '@/hooks'
+import { ExpenseList } from '../components/ExpenseList'
+import { ExpenseForm } from '../components/ExpenseForm'
+import { expenseService } from '../services/expenseService'
+import type { Expense } from '@/types/expense'
+
+export const ExpensePage = () => {
+  // 📋 expenses: 불러온 지출 목록을 저장해요
   const [expenses, setExpenses] = useState<Expense[]>([])
-  const [isAddingExpense, setIsAddingExpense] = useState(false)
-  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null)
+  // ✍️ isCreating: 새 지출 작성 폼 표시 여부를 제어해요
+  const [isCreating, setIsCreating] = useState(false)
+  // ⏳ isLoading: 목록 불러오기 중 로딩 표시를 제어해요
   const [isLoading, setIsLoading] = useState(true)
+  // 🚨 error: 호출 중 발생한 에러 메시지를 저장해요
   const [error, setError] = useState<string | null>(null)
 
-  // 지출 목록 조회
+  // 🔑 useAuth 훅: 로그인한 사용자 정보(user)를 가져와요
+  const { user } = useAuth()
+  // 🔀 useNavigate: 상세 페이지나 다른 경로로 이동할 때 사용해요
+  const navigate = useNavigate()
+
+  // 🔄 fetchExpenses: 서버에서 지출 목록을 가져와 expenses 상태에 저장해요
   const fetchExpenses = async () => {
     if (!user) return
     try {
       setIsLoading(true)
       setError(null)
-      const expenses = await getExpenses(user.uid)
-      setExpenses(expenses)
+      const data = await expenseService.getExpenses(user.uid)
+      setExpenses(data)
     } catch (error) {
-      console.error('지출 목록을 불러오는데 실패했습니다:', error)
-      setError('지출 목록을 불러오는데 실패했습니다. 다시 시도해주세요.')
+      console.error('지출 목록 불러오기 실패:', error)
+      setError('지출 목록을 불러오는데 실패했습니다.')
     } finally {
       setIsLoading(false)
     }
@@ -36,101 +50,102 @@ const ExpensePage = () => {
     fetchExpenses()
   }, [user])
 
-  // 지출 추가
-  const handleAddExpense = async (expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>) => {
+  // ➕ handleCreateExpense: 새 지출을 생성하고 목록을 갱신해요
+  const handleCreateExpense = async (expense: Omit<Expense, 'id'>) => {
     if (!user) return
     try {
       setError(null)
-      await createExpense(user.uid, expenseData)
-      // 지출 추가 후 목록 새로고침
-      await fetchExpenses()
-      setIsAddingExpense(false)
+      await expenseService.createExpense(user.uid, expense)
+      setIsCreating(false)
+      fetchExpenses()
     } catch (error) {
-      console.error('지출 추가 실패:', error)
-      setError('지출 추가에 실패했습니다. 다시 시도해주세요.')
+      console.error('지출 생성 실패:', error)
+      setError('지출을 생성하는데 실패했습니다.')
     }
   }
 
-  // 지출 수정
-  const handleUpdateExpense = async (expenseId: string, expenseData: Partial<Expense>) => {
+  // ✏️ handleUpdateExpense: 지출을 수정하고 목록을 갱신해요
+  const handleUpdateExpense = async (expenseId: string, expense: Partial<Expense>) => {
     if (!user) return
     try {
       setError(null)
-      await updateExpense(user.uid, expenseId, expenseData)
-      // 지출 수정 후 목록 새로고침
-      await fetchExpenses()
-      setSelectedExpense(null)
+      await expenseService.updateExpense(user.uid, expenseId, expense)
+      fetchExpenses()
     } catch (error) {
       console.error('지출 수정 실패:', error)
-      setError('지출 수정에 실패했습니다. 다시 시도해주세요.')
+      setError('지출을 수정하는데 실패했습니다.')
     }
   }
 
-  // 지출 삭제
+  // 🗑 handleDeleteExpense: 지출을 삭제하고 목록을 갱신해요
   const handleDeleteExpense = async (expenseId: string) => {
     if (!user) return
     try {
       setError(null)
-      await deleteExpense(user.uid, expenseId)
-      // 지출 삭제 후 목록 새로고침
-      await fetchExpenses()
-      setSelectedExpense(null)
+      await expenseService.deleteExpense(user.uid, expenseId)
+      fetchExpenses()
     } catch (error) {
       console.error('지출 삭제 실패:', error)
-      setError('지출 삭제에 실패했습니다. 다시 시도해주세요.')
+      setError('지출을 삭제하는데 실패했습니다.')
     }
+  }
+
+  // 🔍 handleExpenseClick: 선택한 지출 상세 페이지로 이동해요
+  const handleExpenseClick = (expenseId: string) => {
+    navigate(`/expenses/${expenseId}`)
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* 🏷️ 제목과 작성 버튼 설명 */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">지출 관리</h1>
+        <h1 className="text-2xl font-bold text-gray-900">지출 관리</h1>
         <button
-          onClick={() => setIsAddingExpense(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={isLoading}
+          onClick={() => setIsCreating(true)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
         >
-          지출 추가
+          새 지출 작성
         </button>
       </div>
 
-      {error && (
-        <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
-          {error}
+      {/* ⏳ isLoading: 로딩 스피너 표시 */}
+      {isLoading && (
+        <div className="flex justify-center items-center h-32">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
       )}
 
-      {isAddingExpense && (
+      {/* 🚨 error: 에러 메시지 박스 표시 */}
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+          <p className="text-red-600">{error}</p>
+        </div>
+      )}
+
+      {/* ✍️ isCreating: 새 지출 작성 폼 토글 영역 설명 */}
+      {isCreating && (
         <div className="mb-6">
           <ExpenseForm
-            onSubmit={handleAddExpense}
-            onCancel={() => setIsAddingExpense(false)}
+            onSubmit={handleCreateExpense}
+            onCancel={() => setIsCreating(false)}
           />
         </div>
       )}
 
-      {isLoading ? (
-        <div className="flex justify-center items-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>
-      ) : (
+      {/* 📜 ExpenseList: 지출 목록 컴포넌트 렌더링 */}
+      {!isLoading && expenses.length > 0 ? (
         <ExpenseList
           expenses={expenses}
-          onExpenseClick={setSelectedExpense}
-          onDelete={handleDeleteExpense}
-        />
-      )}
-
-      {selectedExpense && (
-        <ExpenseDetailModal
-          expense={selectedExpense}
-          onClose={() => setSelectedExpense(null)}
           onUpdate={handleUpdateExpense}
           onDelete={handleDeleteExpense}
+          onExpenseClick={handleExpenseClick}
         />
+      ) : (
+        /* 🚫 목록이 비어있을 때 안내 메시지 표시 */
+        <div className="text-center py-8 text-gray-500">
+          {isLoading ? '지출 목록을 불러오는 중...' : '등록된 지출이 없습니다.'}
+        </div>
       )}
     </div>
   )
-}
-
-export default ExpensePage 
+} 
